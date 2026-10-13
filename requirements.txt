@@ -5,7 +5,7 @@
 
 # ── Core Data Science ────────────────────────────────────────────────────────
 numpy>=1.24
-pandas>=2.0
+pandas>=2.3.3
 matplotlib>=3.8
 seaborn>=0.13
 
