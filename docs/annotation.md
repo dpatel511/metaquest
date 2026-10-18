@@ -101,14 +101,18 @@ Counting rules:
   ignored. Multi-mapping reads are placed by BBMap's `ambiguous` policy
   (default `random`).
 - Alignment identity is computed from the extended CIGAR (`=`/`X`/`I`/`D`) and
-  must reach `abundance.min_identity` (default `0.95`).
-- A read is assigned to the CDS containing its alignment midpoint.
+  must reach `abundance.min_identity` (default `0.95`). For `M` CIGARs, the
+  SAM `NM` tag is used. Alignments without verifiable identity are excluded
+  and counted separately as `reads_unknown_identity` in the summary.
+- A read is assigned to the CDS containing the midpoint of its aligned
+  reference bases (`M`, `=`, `X`), excluding deletions and reference skips.
+  GFF features and SAM reference positions use 1-based inclusive coordinates.
 - For paired data, mates are combined so each fragment counts once. When the
   two mates fall in different genes, the fragment is split equally between
   them. Counts are therefore reported in fragments for paired input and in
   reads for single-end input.
 - Mean depth is aligned reference bases overlapping the CDS divided by CDS
-  length.
+  length. Deletions (`D`) and skipped regions (`N`) do not contribute depth.
 
 Gene values are length-normalized as reads per kilobase (RPK) and converted to
 TPM, so gene TPM sums to one million across all predicted genes.
@@ -119,7 +123,7 @@ TPM, so gene TPM sums to one million across all predicted genes.
 | `functional_abundance.tsv` | per COG, KO, EC, and GO term: contributing genes, summed count, summed TPM |
 | `bbmap.log` | BBMap command and statistics |
 | `summary.json` | mapper version, parameters, mapping and gene-assignment rates |
-| `completion.json` | contig, GFF3, read, and parameter state for restart-safe reuse |
+| `completion.json` | contig, GFF3, and read-content SHA-256 hashes plus parameter state for restart-safe reuse |
 
 With `abundance.term_attribution: full` (default), a gene annotated with
 several terms contributes its full value to each, so a namespace can sum to

@@ -2,7 +2,7 @@
 
 Quality-controlled reads are mapped back to the stable-ID contigs written by
 gene prediction. Each primary alignment that passes the identity filter is
-assigned to the predicted CDS containing its alignment midpoint. For paired
+assigned to the predicted CDS containing its aligned-base midpoint. For paired
 data, mates are combined so each fragment contributes one count, split equally
 across the distinct genes its mates hit. Gene counts are normalized to
 transcripts-per-million-style values (TPM) using CDS nucleotide length, then
@@ -143,6 +143,18 @@ def _alignment_metrics(cigar: str, tags: list[str]) -> tuple[int, float | None]:
     return span, None
 
 
+def _aligned_reference_blocks(start: int, cigar: str) -> list[tuple[int, int]]:
+    """Return aligned reference blocks as 1-based inclusive intervals."""
+    blocks = []
+    for length, op in _CIGAR.findall(cigar):
+        length = int(length)
+        if op in "M=X":
+            blocks.append((start, start + length - 1))
+        if op in _REFERENCE_OPS:
+            start += length
+    return blocks
+
+
 @dataclass
 class _Mate:
     genes: frozenset[str]
@@ -177,15 +189,22 @@ class AbundanceCounter:
         self.stats["reads"] += 1
         mate = _Mate(frozenset(), False)
         if not flag & 0x4 and fields[2] != "*":
-            span, identity = _alignment_metrics(fields[5], fields[11:])
-            if identity is None or identity >= self.min_identity:
+            _, identity = _alignment_metrics(fields[5], fields[11:])
+            if identity is None:
+                self.stats["reads_unknown_identity"] += 1
+            elif identity >= self.min_identity:
                 self.stats["reads_mapped"] += 1
-                start = int(fields[3])
-                end = start + max(span, 1) - 1
-                for gene in self.index.overlapping(fields[2], start, end):
-                    overlap = min(end, gene.end) - max(start, gene.start) + 1
-                    self.aligned_bases[gene.gene_id] += overlap
-                midpoint = (start + end) // 2
+                blocks = _aligned_reference_blocks(int(fields[3]), fields[5])
+                for start, end in blocks:
+                    for gene in self.index.overlapping(fields[2], start, end):
+                        overlap = min(end, gene.end) - max(start, gene.start) + 1
+                        self.aligned_bases[gene.gene_id] += overlap
+                offset = (sum(end - start + 1 for start, end in blocks) - 1) // 2
+                for start, end in blocks:
+                    if offset <= end - start:
+                        midpoint = start + offset
+                        break
+                    offset -= end - start + 1
                 mate = _Mate(
                     frozenset(gene.gene_id for gene in self.index.containing(fields[2], midpoint)),
                     True,
@@ -448,7 +467,10 @@ def run_gene_abundance(
     expected_state = {
         "contigs_sha256": _sha256(contigs_fasta),
         "genes_gff_sha256": _sha256(genes_gff),
-        "reads": [{"path": str(path), "size_bytes": path.stat().st_size} for path in reads],
+        "reads": [
+            {"path": str(path), "size_bytes": path.stat().st_size, "sha256": _sha256(path)}
+            for path in reads
+        ],
         "bbmap_version": version,
         "min_identity": min_identity,
         "ambiguous": ambiguous,
@@ -508,7 +530,7 @@ def run_gene_abundance(
             "tool": "BBMap",
             "tool_version": reported_version,
             "count_unit": unit,
-            "assignment": "alignment midpoint within CDS; fragment split across distinct genes",
+            "assignment": "aligned-base midpoint within CDS; fragment split across distinct genes",
             "normalization": "TPM from CDS nucleotide length",
             "min_identity": min_identity,
             "ambiguous": ambiguous,
@@ -518,6 +540,7 @@ def run_gene_abundance(
             "input_reads": stats["reads"],
             "mapped_reads": stats["reads_mapped"],
             "reads_below_identity": stats["reads_below_identity"],
+            "reads_unknown_identity": stats["reads_unknown_identity"],
             f"input_{unit}": fragments,
             f"mapped_{unit}": stats["fragments_mapped"],
             f"{unit}_in_genes": stats["fragments_in_genes"],

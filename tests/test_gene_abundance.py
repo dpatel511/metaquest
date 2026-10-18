@@ -49,6 +49,47 @@ def test_alignment_identity_uses_extended_cigar_and_nm_fallback():
     assert _alignment_metrics("100M", []) == (100, None)
 
 
+def test_deletions_do_not_contribute_to_depth():
+    gene = Gene("g", "c", 1, 205, "+", "00")
+    counter = AbundanceCounter(GeneIndex([gene]), min_identity=0.95, paired=False)
+    counter.add_sam_lines([_sam("r", 0, "c", 1, "100=5D100=")])
+
+    assert counter.counts["g"] == 1
+    assert counter.aligned_bases["g"] == 200
+
+
+def test_reference_skips_do_not_create_gene_support():
+    genes = [Gene("aligned", "c", 1, 50, "+", "00"), Gene("gap", "c", 51, 150, "+", "00")]
+    counter = AbundanceCounter(GeneIndex(genes), min_identity=0.95, paired=False)
+    counter.add_sam_lines([_sam("r", 0, "c", 1, "50=100N50=")])
+
+    assert counter.counts == Counter({"aligned": 1})
+    assert counter.aligned_bases == Counter({"aligned": 50})
+
+
+def test_clipping_and_insertions_do_not_advance_reference_coordinates():
+    gene = Gene("g", "c", 101, 199, "+", "00")
+    counter = AbundanceCounter(GeneIndex([gene]), min_identity=0.95, paired=False)
+    counter.add_sam_lines([_sam("r", 0, "c", 101, "5S50=1I49=5S")])
+
+    assert counter.counts["g"] == 1
+    assert counter.aligned_bases["g"] == 99
+
+
+def test_unknown_identity_is_excluded_and_reported():
+    counter = AbundanceCounter(GeneIndex(GENES), min_identity=0.95, paired=False)
+    counter.add_sam_lines([
+        _sam("unknown", 0, "c1", 101, "100M"),
+        _sam("known", 0, "c1", 101, "100M", "NM:i:0"),
+    ])
+
+    assert counter.counts["c1_1"] == 1
+    assert counter.stats["reads"] == 2
+    assert counter.stats["reads_unknown_identity"] == 1
+    assert counter.stats["reads_below_identity"] == 0
+    assert counter.stats["fragments_mapped"] == 1
+
+
 def test_single_end_counts_by_midpoint_and_reports_intergenic():
     counter = AbundanceCounter(GeneIndex(GENES), min_identity=0.95, paired=False)
     counter.add_sam_lines(
@@ -222,6 +263,16 @@ def test_run_gene_abundance_with_mocked_mapper_and_reuse(tmp_path, monkeypatch):
     completion = json.loads((tmp_path / "gene_abundance" / "completion.json").read_text())
     assert completion["completed"] is True
 
+    # Same path and byte count must not hide changed sequence content.
+    previous_size = reads.stat().st_size
+    reads.write_text("@r1\nTGCA\n+\nIIII\n")
+    assert reads.stat().st_size == previous_size
+    _, _, _, reused = run_gene_abundance(
+        [reads], contigs, gff, tmp_path, functional_table=functional,
+        read_mode="single", reuse=True,
+    )
+    assert not reused and len(calls) == 2
+
 
 @pytest.mark.skipif(shutil.which("bbmap.sh") is None, reason="BBMap not installed")
 def test_bbmap_end_to_end_recovers_relative_abundance(tmp_path):
@@ -278,6 +329,7 @@ def test_abundance_report_html_and_plots(tmp_path):
         "fragments_in_genes": 6, "intergenic_fragments": 2, "mapping_rate": 0.8,
         "gene_assignment_rate": 0.6, "genes_with_counts": 3, "total_genes": 3,
         "normalization": "TPM from CDS nucleotide length", "functional": info,
+        "reads_unknown_identity": 2,
     }
     ctx = SimpleNamespace(
         output_dir=tmp_path, completed_stages=[], config=load_config(db_dir=tmp_path / "db"),
@@ -291,6 +343,8 @@ def test_abundance_report_html_and_plots(tmp_path):
     assert result["abundance"]["functional_abundance"] == "gene_abundance/functional_abundance.tsv"
     assert "Gene abundance" in (tmp_path / "report.html").read_text()
     assert "Mapping rate: 80.00%" in (tmp_path / "04_abundance_report.txt").read_text()
+    assert "Reads excluded for unknown identity: 2" in (tmp_path / "04_abundance_report.txt").read_text()
+    assert "Reads excluded for unknown identity" in (tmp_path / "report.html").read_text()
     assert (tmp_path / "plots" / "abundance_ko.svg").is_file()
     assert (tmp_path / "plots" / "plot_data" / "abundance_cog.tsv").is_file()
 

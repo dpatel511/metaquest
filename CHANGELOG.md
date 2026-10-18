@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Count only aligned bases for gene depth and midpoint assignment, exclude
+  alignments with unverifiable identity, and hash read contents before reusing
+  gene abundance results.
 - Add a Gene Abundance stage that maps quality-controlled reads to the
   stable-ID contigs with BBMap, assigns fragments to Pyrodigal CDS features,
   and writes per-gene counts, mean depth, RPK, and TPM
