@@ -1,9 +1,14 @@
 # MetaQuest
 
 MetaQuest is a research-use command-line pipeline for short-read metagenomic
-FASTQ analysis. Version `2.0.0a1` is a stabilization release: the
-maintained runtime is intentionally smaller than earlier prototypes and does
-not make clinical or pathogen-risk claims.
+FASTQ analysis. This checkout prepares the `2.0.0b1` research beta, with a
+maintained workflow for profiling, assembly, annotation, abundance and reporting.
+It does not make clinical or pathogen-risk claims.
+
+Screening and restored comparison are included in the beta. Screening covers
+16 human-associated bacterial species targets and curated, organism-dependent
+AMRFinderPlus protein families. Formal two-group comparisons are exploratory.
+The older `2.0.0a1` package does not contain these additions.
 
 ## Current capabilities
 
@@ -22,9 +27,14 @@ not make clinical or pathogen-risk claims.
 - descriptive text, JSON, offline HTML, and publication figure reporting
 - explicit classified/unclassified denominators and reproducibility metadata
 - versioned taxonomy and eggNOG database installation
+- optional species-target and AMRFinderPlus protein evidence screening
+- per-stage HTML, JSON and TSV reports with explicit skipped/not-run states
+- aligned multi-sample profiles and exploratory comparisons of two independent groups
 
-MetaQuest does not currently perform read trimming, host-read removal, validated
-AMR or virulence analysis, clinical diagnosis, or treatment recommendations.
+MetaQuest uses fastp for read trimming. It does not currently remove host reads,
+diagnose infection, establish resistance phenotypes, or recommend treatment.
+Screening reports curated sequence evidence with database provenance; its
+biological sensitivity and specificity require independent validation.
 
 ## Pipeline
 
@@ -37,7 +47,8 @@ FASTQ
   ├── Pyrodigal
   ├── eggNOG-mapper → COG / KO / EC / GO
   ├── BBMap read mapping → gene TPM → functional abundance
-  └── descriptive reporting → HTML + figures + plotted-data TSV
+  ├── optional taxon targets + AMRFinderPlus protein evidence
+  └── per-stage + consolidated reporting → HTML + figures + plotted-data TSV
 ~~~
 
 The maintained pipeline currently runs directly in Python. Migration to
@@ -45,13 +56,14 @@ Snakemake and optional Bowtie2 host filtering remain planned.
 
 ## Quick start
 
-Install the Python distribution from PyPI:
+After beta publication, install the exact Python distribution from PyPI:
 
 ~~~bash
-python -m pip install metaquest-bio
+python -m pip install --pre 'metaquest-bio==2.0.0b1'
 metaquest --version
 ~~~
 
+Before publication, install this checkout using the Conda instructions below.
 The distribution is named `metaquest-bio`; the installed Python package and
 command remain `metaquest`. The PyPI distribution does not bundle Kraken2,
 Bracken, MEGAHIT, DIAMOND, or eggNOG-mapper. For the complete runtime, clone
@@ -63,11 +75,16 @@ conda activate metaquest
 python -m pip install .
 ~~~
 
+For optional screening, also install `environment/screening.yml` separately and
+append its executables to PATH using the [installation guide](docs/installation.md).
+It isolates AMRFinderPlus's native libraries from eggNOG's older DIAMOND stack.
+
 Inspect and install the taxonomy database:
 
 ~~~bash
 metaquest databases --list
 metaquest databases --database taxonomy
+metaquest databases --database functional
 metaquest check
 ~~~
 
@@ -83,7 +100,8 @@ metaquest run \
   --output results/sample
 ~~~
 
-Use `--skip-functional` to stop after Pyrodigal, `--skip-abundance` to skip
+Use `--skip-functional` to skip eggNOG annotation while retaining gene prediction
+and gene abundance, `--skip-abundance` to skip
 read mapping and gene abundance, or `--taxonomy-only` to skip assembly, gene
 prediction, functional annotation, and abundance. The former
 `--skip-annotation` spelling remains as a deprecated alias for
@@ -99,6 +117,7 @@ directory to a timestamped backup before starting fresh.
 metaquest check       # verify tools and databases
 metaquest validate    # validate FASTQ input
 metaquest run         # run the analysis pipeline
+metaquest compare     # align profiles; optionally test two independent groups
 metaquest databases   # inspect or install reference data
 metaquest init-config # create a configuration file
 ~~~
@@ -148,12 +167,14 @@ The database path resolution order is:
 - [Database management](docs/databases.md)
 - [Usage](docs/usage.md)
 - [Gene prediction and functional annotation](docs/annotation.md)
+- [Research screening and comparative analysis](docs/screening-comparison.md)
 - [Release process](docs/releasing.md)
+- [Reproducible acceptance checks](docs/acceptance.md)
 - [Changelog](CHANGELOG.md)
 
 ## Development status
 
-MetaQuest is alpha software intended for reproducible method development. Before
+MetaQuest is beta software intended for reproducible method development. Before
 a stable release, the workflow requires end-to-end Snakemake execution,
 functional and pathogen-associated method validation, resource benchmarks,
 comparison-method validation, and publication datasets.

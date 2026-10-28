@@ -1,0 +1,17 @@
+taxid	name	source	note
+470	Acinetobacter baumannii	https://www.who.int/publications/i/item/9789240093461	WHO BPPL-associated taxon; species detection does not establish resistance or infection.
+562	Escherichia coli	https://www.who.int/publications/i/item/9789240093461	Enterobacterales target; many strains are commensal. Species detection does not establish pathotype or resistance.
+573	Klebsiella pneumoniae	https://www.who.int/publications/i/item/9789240093461	Enterobacterales target; colonization and infection cannot be distinguished from this taxonomic profile.
+550	Enterobacter cloacae	https://www.who.int/publications/i/item/9789240093461	Enterobacterales target; species detection does not establish resistance or infection.
+1773	Mycobacterium tuberculosis	https://www.who.int/publications/i/item/9789240093461	Species-level screening candidate only; not diagnostic confirmation or resistance inference.
+28901	Salmonella enterica	https://www.who.int/publications/i/item/9789240093461	Species-level screening does not resolve serovar, pathogenicity or resistance.
+623	Shigella flexneri	https://www.who.int/publications/i/item/9789240093461	Closely related Escherichia/Shigella assignments require additional confirmation.
+624	Shigella sonnei	https://www.who.int/publications/i/item/9789240093461	Closely related Escherichia/Shigella assignments require additional confirmation.
+1352	Enterococcus faecium	https://www.who.int/publications/i/item/9789240093461	Colonization and resistance cannot be inferred from a species-level classification.
+287	Pseudomonas aeruginosa	https://www.who.int/publications/i/item/9789240093461	WHO BPPL-associated taxon; species detection does not establish resistance or infection.
+1280	Staphylococcus aureus	https://www.who.int/publications/i/item/9789240093461	Species classification does not establish methicillin resistance, infection or toxin production.
+485	Neisseria gonorrhoeae	https://www.who.int/publications/i/item/9789240093461	Species-level screening candidate only; not diagnostic confirmation or resistance inference.
+1314	Streptococcus pyogenes	https://www.who.int/publications/i/item/9789240093461	WHO BPPL-associated taxon; species detection does not establish resistance or infection.
+1311	Streptococcus agalactiae	https://www.who.int/publications/i/item/9789240093461	WHO BPPL-associated taxon; species detection does not establish resistance or infection.
+1313	Streptococcus pneumoniae	https://www.who.int/publications/i/item/9789240093461	Species-level screening candidate only; related streptococci can complicate classification.
+727	Haemophilus influenzae	https://www.who.int/publications/i/item/9789240093461	Species-level screening does not establish capsular type, infection or resistance.

@@ -23,10 +23,67 @@ and PyPI Trusted Publishing. No long-lived PyPI API token is stored in GitHub.
 
 ## TestPyPI rehearsal
 
+First run CI on the exact commit to be uploaded and wait for all six required
+checks to pass. Both publishing workflows refuse to build for publication if
+the latest push/manual CI run for that commit has not succeeded. PR CI checks a
+merge revision, so dispatch CI on a feature branch before its TestPyPI rehearsal;
+after merging, wait for the `main` push CI run before tagging that commit.
+
 Run the **Publish to TestPyPI** workflow manually. Approve the `testpypi`
 environment deployment, then inspect both the project page and uploaded wheel
 and source distribution. Versions on package indexes are immutable, so bump the
 pre-release serial before repeating an upload.
+
+The workflow installs runtime dependencies from PyPI, then the exact MetaQuest
+version from TestPyPI with `--no-deps`. This keeps the package source unambiguous.
+Its final job checks the installed version, packaged species catalog and CLI help
+from outside the checkout. A green upload alone is not a successful rehearsal;
+the installation-verification job must also pass.
+
+In a fresh complete Conda environment, repeat the documented small pipeline run
+using that uploaded package instead of `pip install -e .`:
+
+```bash
+python -m pip install --no-deps --index-url https://test.pypi.org/simple/ 'metaquest-bio==2.0.0b1'
+metaquest --version
+```
+
+Follow [acceptance checks](acceptance.md), retain the resulting evidence and
+inspect HTML in a browser. Reusing existing valid reference databases is fine;
+record their manifests and actual tool versions.
+
+## Beta release gate
+
+The `2.0.0b1` scope is frozen around FASTQ validation/preprocessing, taxonomy,
+assembly, gene prediction, annotation, abundance, reporting and the documented
+optional research screening/comparison modes. During beta prioritize fixes,
+installation reliability, documentation and independent validation.
+
+Before publishing:
+
+- Update version, release date, Beta classifier, installation commands and changelog together.
+- Require the Python 3.10/3.11/3.12, license, distribution and complete Conda checks.
+  The distribution job tests a wheel in an isolated environment outside the source
+  tree. Conda CI installs screening data with MetaQuest and sets
+  `METAQUEST_TEST_AMR_DB`, so the native positive/negative test runs.
+  The core and screening tool environments resolve separately to avoid their
+  incompatible DIAMOND/zlib and AMRFinderPlus/curl constraints.
+- Inspect the native-integration artifact for its JUnit results and database
+  manifest. The AMRFinderPlus cache key includes the actual tool version; increment
+  its cache revision deliberately when refreshing the selected compatible data.
+- Finish the clean TestPyPI package rehearsal and acceptance checks for read modes,
+  skip/resume, missing-data errors and zero-hit reporting.
+- Review report rendering on desktop/narrow screens and in print. Automated
+  link/image checks and inspected PNGs do not prove browser layout correctness.
+- Describe screening as a 16-species bacterial target subset plus selected curated
+  protein families; describe formal comparisons as exploratory two-group CLR tests.
+  Runtime validation is not a sensitivity/specificity or clinical-validation claim.
+- Record dependency deprecation warnings and verify with fresh supported packages.
+  Do not suppress failures or broad classes of warnings to make checks green.
+
+Older outputs lacking complete provenance may be unsuitable for `compare` or
+strict `--resume`. Reprocess into a new directory rather than editing provenance
+to force compatibility. Keep original output directories intact.
 
 ## Production release
 
@@ -34,8 +91,9 @@ pre-release serial before repeating an upload.
    corresponding changelog entry.
 2. Merge the release preparation PR after all required checks pass.
 3. Create a signed or annotated tag with the same canonical version prefixed by
-   `v`, for example `v2.0.0a1`.
-4. Create and publish a GitHub Release from that tag.
+   `v`, for example `v2.0.0b1`.
+4. Create and publish a GitHub Release from that tag. Mark beta releases as
+   prereleases; the upload workflow checks that this flag matches the package version.
 5. Approve the `pypi` environment deployment.
 
 Publishing the GitHub Release triggers `release.yml`. The workflow verifies

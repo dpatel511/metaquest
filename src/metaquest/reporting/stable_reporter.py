@@ -116,6 +116,7 @@ def generate_stable_reports(ctx) -> None:
         "analysis_type": "short_read_metagenomics",
         "research_use_only": True,
         "completed_stages": [*ctx.completed_stages, "Reporting"],
+        "validation": getattr(ctx, "metadata", {}).get("validation", {"status": "not_recorded"}),
     }
 
     if ctx.classification:
@@ -169,10 +170,16 @@ def generate_stable_reports(ctx) -> None:
         )
 
     if ctx.annotation:
+        prediction_path = getattr(ctx.annotation, "gene_prediction_dir", output_dir / "gene_prediction") / "summary.json"
+        summary["gene_prediction"] = (
+            json.loads(prediction_path.read_text()) if prediction_path.is_file()
+            else {"genes_predicted": ctx.annotation.gene_count}
+        )
+        functional_completed = bool(ctx.annotation.functional_annotations)
         annotation_summary = {
             "predicted_genes": ctx.annotation.gene_count,
-            "annotated_genes": ctx.annotation.annotated_count,
-            "unannotated_genes": ctx.annotation.gene_count - ctx.annotation.annotated_count,
+            "annotated_genes": ctx.annotation.annotated_count if functional_completed else None,
+            "unannotated_genes": ctx.annotation.gene_count - ctx.annotation.annotated_count if functional_completed else None,
             "functional_status": (
                 "completed" if ctx.annotation.functional_annotations else "skipped"
             ),
@@ -268,6 +275,17 @@ def generate_stable_reports(ctx) -> None:
         )
     if getattr(ctx, "preprocessing", None):
         summary["preprocessing"] = ctx.preprocessing
+    screening = getattr(ctx, "screening", None)
+    if screening:
+        summary["screening"] = screening
+        lines = ["METAQUEST RESEARCH SCREENING", "=" * 28,
+                 f"Taxonomic candidates: {screening['taxon_candidates']} / {screening['catalog_targets']} targets",
+                 f"Screened predicted proteins: {screening['screened_genes']}",
+                 f"Protein evidence rows: {screening['protein_matches']}",
+                 f"AMRFinderPlus version: {screening['tool_version']}",
+                 f"Database release: {screening['database_release']}",
+                 "", "Interpretation limits", *screening["limitations"]]
+        (output_dir / "05_screening_report.txt").write_text("\n".join(lines) + "\n")
     if hasattr(ctx, "config"):
         from metaquest.reporting.plots import generate_plots
         figures = generate_plots(ctx, summary.get("taxonomy"))
@@ -276,6 +294,9 @@ def generate_stable_reports(ctx) -> None:
         ]
     else:
         summary["figures"] = []
+    from metaquest.reporting.steps import write_step_reports
+
+    summary["stage_reports"] = write_step_reports(output_dir, summary)
     summary_path = output_dir / "analysis_summary.json"
     temporary_summary = summary_path.with_suffix(".json.tmp")
     temporary_summary.write_text(
@@ -299,6 +320,13 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
         return f'<table class="metrics">{rendered}</table>'
 
     sections = []
+    stage_links = "".join(
+        f'<tr><td><a href="{html.escape(item["html"], quote=True)}">{html.escape(item["stage"])}</a></td>'
+        f'<td>{html.escape(item["status"])}</td></tr>' for item in summary.get("stage_reports", [])
+    )
+    sections.append('<section><h2>Workflow evidence</h2><table><tr><th>Step report</th><th>Status</th></tr>' + stage_links + '</table></section>')
+    validation = summary.get("validation", {})
+    sections.append(f'<section><h2>Input validation</h2>{metric_table([("Status", validation.get("status", "not_recorded")), ("Strict checks", validation.get("strict", False))])}</section>')
     preprocessing = summary.get("preprocessing")
     if preprocessing:
         before = preprocessing.get("before", {})
@@ -346,14 +374,17 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
         ]
         sections.append(f"<section><h2>Assembly</h2>{metric_table(rows)}</section>")
 
+    if summary.get("gene_prediction"):
+        prediction = summary["gene_prediction"]
+        sections.append(f'<section><h2>Gene prediction</h2>{metric_table([(key.replace("_", " "), value) for key, value in prediction.items() if not isinstance(value, (dict, list))])}</section>')
     annotation = summary.get("annotation")
     if annotation:
         genes = annotation["predicted_genes"]
         annotated = annotation["annotated_genes"]
         rows = [
             ("Predicted genes", f"{genes:,}"),
-            ("Annotated genes", f"{annotated:,}"),
-            ("Annotation rate", f"{annotated / genes:.2%}" if genes else "unavailable"),
+            ("Annotated genes", f"{annotated:,}" if annotated is not None else "not assessed"),
+            ("Annotation rate", f"{annotated / genes:.2%}" if genes and annotated is not None else "not assessed"),
             ("Functional annotation", annotation["functional_status"]),
             ("eggNOG-mapper", annotation.get("eggnog_mapper_version", "not run")),
             ("eggNOG database", annotation.get("eggnog_database_release", "not run")),
@@ -377,7 +408,18 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
             rows.append(("Term attribution", functional["term_attribution"]))
         sections.append(f"<section><h2>Gene abundance</h2>{metric_table(rows)}</section>")
 
+    screening = summary.get("screening")
+    if screening:
+        rows = [("Taxonomic candidates", screening["taxon_candidates"]),
+                ("Protein evidence rows", screening["protein_matches"]),
+                ("Screened genes", screening["screened_genes"]),
+                ("AMRFinderPlus", screening["tool_version"]),
+                ("Database release", screening["database_release"])]
+        notes = "".join(f"<li>{html.escape(note)}</li>" for note in screening["limitations"])
+        sections.append(f'<section><h2>Research screening</h2>{metric_table(rows)}<ul>{notes}</ul></section>')
+
     captions = {
+        "validation_quality": "Input quality rates in the validation sample; analyzed read counts and sampling flags are in the source TSV.",
         "qc_metrics": "Base-quality rates before and after preprocessing.",
         "qc_retention": "Individual reads retained and filtered by fastp.",
         "qc_filtering_reasons": "Individual reads removed by fastp, grouped by reason.",
@@ -386,11 +428,18 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
         "assembly_cumulative_length": "Cumulative assembly size with L50 and L90 markers.",
         "abundance_cog": "COG categories ranked by summed gene TPM.",
         "abundance_ko": "KEGG orthologs ranked by summed gene TPM.",
+        "abundance_ec": "Enzyme Commission terms ranked by summed gene TPM.",
+        "abundance_go": "Gene Ontology terms ranked by summed gene TPM.",
+        "gene_prediction_lengths": "Predicted CDS lengths and partial-gene status from 1-based inclusive GFF coordinates.",
+        "screening_taxa": "Exact species-taxid catalog matches; these classifications do not establish pathogenic strains or infection.",
+        "screening_proteins": "Native curated AMRFinderPlus protein evidence classes; counts are evidence rows, not clinical risk scores.",
     }
     figures = []
     for relative in summary.get("figures", []):
         path = output_dir / relative
-        if path.suffix.lower() != ".svg":
+        if path.suffix.lower() not in (".svg", ".png"):
+            continue
+        if path.suffix.lower() == ".png" and path.with_suffix(".svg").is_file():
             continue
         encoded = base64.b64encode(path.read_bytes()).decode("ascii")
         stem = path.stem
@@ -400,17 +449,20 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
             + " assignments.",
         )
         figures.append(
-            '<figure><img src="data:image/svg+xml;base64,'
+            '<figure><img src="data:' + ("image/svg+xml" if path.suffix == ".svg" else "image/png") + ';base64,'
             f'{encoded}" alt="{html.escape(caption)}">'
             f"<figcaption>{html.escape(caption)}</figcaption></figure>"
         )
 
     title = "MetaQuest analysis report"
+    from metaquest.reporting.pages import STYLE
+
     document = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <style>
+{STYLE}
 body{{font-family:system-ui,sans-serif;max-width:1100px;margin:auto;padding:2rem;color:#17202a}}
 section,figure{{border:1px solid #d5d8dc;border-radius:.5rem;padding:1rem;margin:1rem 0}}
 .metrics{{border-collapse:collapse;width:100%}}.metrics th,.metrics td{{padding:.55rem;border-bottom:1px solid #e5e7e9;text-align:left}}

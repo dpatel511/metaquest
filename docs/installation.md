@@ -1,6 +1,6 @@
 # Installation
 
-This guide covers the maintained MetaQuest `2.0.0a1` runtime.
+This guide covers the MetaQuest `2.0.0b1` research beta.
 
 ## Supported environment
 
@@ -19,10 +19,11 @@ The distribution is named `metaquest-bio`; it installs the `metaquest` Python
 package and CLI command:
 
 ~~~bash
-python -m pip install metaquest-bio
+python -m pip install --pre 'metaquest-bio==2.0.0b1'
 metaquest --version
 ~~~
 
+Use that command after beta publication; until then install this checkout below.
 PyPI installs the Python layer only. The external bioinformatics tools listed
 below must be installed separately. The recommended complete environment is the
 repository's Conda environment.
@@ -43,6 +44,25 @@ For a regular non-editable installation:
 python -m pip install .
 ~~~
 
+Optional screening uses a separate native-tool environment. eggNOG-mapper's
+DIAMOND `<2.1` requires zlib `<1.3`, while current AMRFinderPlus requires a newer
+curl/zlib stack; installing both into one environment does not solve reliably.
+Keep the core environment active and append the screening executables:
+
+~~~bash
+conda env create -f environment/screening.yml
+conda activate metaquest
+export PATH="$PATH:$(conda run -n metaquest-screening bash -c 'printf "%s/bin" "$CONDA_PREFIX"')"
+amrfinder --version
+metaquest databases --db-dir /data/metaquest-db --database amr
+metaquest check --db-dir /data/metaquest-db --screen-pathogens
+~~~
+
+Repeat that PATH export in new shells where screening is needed. Appending keeps
+the core environment's Python first. AMRFinderPlus retains its own native library
+and helper-program paths. Do not downgrade the screening environment's shared
+libraries to force it into the core environment.
+
 Confirm the CLI:
 
 ~~~bash
@@ -56,12 +76,14 @@ The minimal environment contains:
 
 | Component | Role |
 |---|---|
+| fastp | adapter and quality preprocessing |
 | Kraken2 | read-level taxonomic classification |
 | Bracken | abundance re-estimation |
 | MEGAHIT | metagenomic assembly |
 | Pyrodigal | metagenomic gene prediction |
 | eggNOG-mapper and DIAMOND | orthology-based functional annotation |
-| BBMap | interleaved FASTQ splitting compatibility |
+| BBMap | gene abundance mapping and interleaved FASTQ splitting |
+| AMRFinderPlus | optional curated protein evidence screening |
 
 Pyrodigal is a Python dependency and does not require a separate Prodigal or
 Prokka executable.

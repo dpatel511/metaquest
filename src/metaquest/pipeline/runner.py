@@ -209,6 +209,7 @@ class PipelineRunner:
                 "taxonomy_only": ctx.skip_annotation,
                 "skip_functional": ctx.skip_functional,
                 "skip_abundance": ctx.skip_abundance,
+                "screen_pathogens": ctx.config.screening.enabled,
                 "low_memory": ctx.low_memory,
                 "resume": ctx.resume,
             },
@@ -236,6 +237,7 @@ class PipelineRunner:
                 "bbmap": _read_json(
                     ctx.output_dir / "gene_abundance" / "summary.json"
                 ).get("tool_version", "not_run"),
+                "screening": ctx.screening or "not_run",
                 "kraken_database": {
                     "path": str(ctx.config.databases.kraken_db.resolve()),
                     "configured_release": ctx.config.databases.kraken_db_version,
@@ -294,14 +296,18 @@ def build_default_pipeline(
       5. Gene abundance (BBMap read mapping + TPM) [unless skipped]
       6. Stable reporting
 
-    Custom pathogen detection, ML, HMM, ESM, island detection, and risk
-    scoring are intentionally excluded until independently validated.
+    Optional AMRFinderPlus evidence screening runs after gene quantification.
+    Custom risk scoring and clinical interpretation are not performed.
     """
     from metaquest.pipeline.stages.classification import run_classification_stage
     from metaquest.pipeline.stages.preprocessing import run_preprocessing_stage
     from metaquest.pipeline.stages.reporting import run_reporting_stage
 
     runner = PipelineRunner(config)
+    if config.screening.enabled and skip_annotation:
+        from metaquest.exceptions import ConfigError
+
+        raise ConfigError("--screen-pathogens requires gene prediction; omit --taxonomy-only")
     runner.add_stage("Read Preprocessing", run_preprocessing_stage)
     runner.add_stage("Taxonomic Classification", run_classification_stage)
 
@@ -320,6 +326,11 @@ def build_default_pipeline(
             from metaquest.pipeline.stages.abundance import run_abundance_stage
 
             runner.add_stage("Gene Abundance", run_abundance_stage)
+
+        if config.screening.enabled:
+            from metaquest.pipeline.stages.screening import run_screening_stage
+
+            runner.add_stage("Research Screening", run_screening_stage)
 
     runner.add_stage("Reporting", run_reporting_stage)
     return runner

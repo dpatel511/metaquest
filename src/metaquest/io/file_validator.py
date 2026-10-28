@@ -106,7 +106,7 @@ class FileValidator:
             'file_path': input_file,
             'file_size_mb': os.path.getsize(input_file) / (1024 * 1024),
             'is_compressed': str(input_file).endswith('.gz'),
-            'md5_checksum': self._calculate_md5(input_file)[:16]
+            'md5_checksum': self._calculate_md5(input_file)
         }
         
         stats.update(self._analyze_fastq(input_file))
@@ -256,7 +256,7 @@ class FileValidator:
                 'header': 'File Properties',
                 'rows': {
                     'Size': f"{stats['file_size_mb']:.2f} MB ({'gzip compressed' if stats['is_compressed'] else 'uncompressed'})",
-                    'MD5 Checksum': f"{stats['md5_checksum']}...",
+                    'MD5 Checksum': stats['md5_checksum'],
                     'Encoding': stats.get('quality_encoding', 'Unknown')
                 }
             },

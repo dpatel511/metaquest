@@ -30,16 +30,60 @@ def test_database_catalog_distinguishes_available_and_planned(tmp_path):
     assert rows["taxonomy"]["Release"] == "2026-06-26"
     assert rows["functional"]["Status"] == "available"
     assert rows["functional"]["Release"] == "5.0.2"
-    assert rows["amr"]["Status"] == "planned"
+    assert rows["amr"]["Status"] == "available"
     assert rows["virulence"]["Status"] == "planned"
 
 
 def test_available_databases_record_upstream_provenance():
-    for key in ("taxonomy", "functional"):
+    for key in ("taxonomy", "functional", "amr"):
         spec = DATABASES[key]
         assert spec.release != "pending"
         assert spec.url
         assert spec.provenance_url
+
+
+def test_database_subdirectory_is_diagnosed_instead_of_doubled(tmp_path):
+    from metaquest.settings import load_config
+    from metaquest.exceptions import ConfigError
+
+    taxonomy = tmp_path / "databases/taxonomy"
+    taxonomy.mkdir(parents=True)
+    (taxonomy / "hash.k2d").write_text("index")
+    with pytest.raises(ConfigError, match="root"):
+        load_config(db_dir=taxonomy)
+
+
+def test_amr_install_validates_before_replacing_existing_database(tmp_path, monkeypatch):
+    from metaquest.core.screening import AMR_FILES, resolve_amr_database
+
+    target = tmp_path / "amr"
+    target.mkdir()
+    (target / "previous").write_text("preserve")
+    monkeypatch.setattr(database_manager.shutil, "which", lambda command: command)
+    monkeypatch.setattr(database_manager.shutil, "disk_usage", lambda path: SimpleNamespace(free=10 * 1024**3))
+
+    def failing_update(command, **kwargs):
+        return SimpleNamespace(returncode=1)
+
+    monkeypatch.setattr(database_manager.subprocess, "run", failing_update)
+    with pytest.raises(DatabaseSetupError, match="setup failed"):
+        database_manager.install_database("amr", tmp_path, force=True)
+    assert (target / "previous").read_text() == "preserve"
+
+    def successful_update(command, **kwargs):
+        if command[0] == "amrfinder_update":
+            staged = Path(command[-1])
+            version = staged / "test-v1"
+            version.mkdir()
+            for name in AMR_FILES:
+                (version / name).write_text("test-v1\n")
+            (staged / "latest").symlink_to("test-v1", target_is_directory=True)
+        return SimpleNamespace(returncode=0, stdout="validated", stderr="")
+
+    monkeypatch.setattr(database_manager.subprocess, "run", successful_update)
+    installed = database_manager.install_database("amr", tmp_path, force=True)
+    assert resolve_amr_database(installed).name == "test-v1"
+    assert database_manager.is_installed("amr", tmp_path)
 
 
 def test_safe_extract_rejects_path_traversal(tmp_path):

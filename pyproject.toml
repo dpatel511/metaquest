@@ -26,7 +26,7 @@ keywords = [
   "bracken",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
@@ -79,7 +79,7 @@ where = ["src"]
 exclude = ["tests", "tests.*"]
 
 [tool.setuptools.package-data]
-metaquest = ["metaquest_default.yaml"]
+metaquest = ["metaquest_default.yaml", "data/*.tsv"]
 
 [tool.setuptools.dynamic]
 version = { attr = "metaquest.config.__version__" }

@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+## [2.0.0b1] — 2026-10-28
+
+Research beta prepared for publication. Screening and formal comparisons remain
+limited to their documented scope; runtime checks do not establish biological accuracy.
+
+- Mark the package and documentation as a beta, correct the issue-report link,
+  and record MetaQuest's version in comparative summaries.
+- Test isolated wheel installations and native AMRFinderPlus controls in CI;
+  gate publishing on successful CI for the exact release commit and verify the
+  exact TestPyPI package after upload.
+- Add reproducible acceptance commands and a checker for result accounting,
+  gene-ID joins, per-stage artifacts and embedded report links/images.
+- Resolve core and screening native tools in separate environments to avoid
+  eggNOG/DIAMOND and AMRFinderPlus curl/zlib conflicts. Handle the all-tied CLR
+  case explicitly and reject other undefined statistical p-values.
+
+- Add optional `--screen-pathogens` research screening with exact species-taxid
+  targets and native AMRFinderPlus AMR/selected virulence/stress evidence;
+  preserve gene/contig coordinates, method, provenance and interpretation limits.
+- Install tool-compatible AMRFinderPlus databases through `metaquest databases
+  --database amr`, with staged validation and recorded release/file hashes.
+- Generate HTML, JSON and TSV reports for every workflow stage, gene-prediction
+  and screening plots, and explicit skipped/not-run states in the consolidated report.
+- Restore `compare` using complete ID-aligned taxonomy or functional-abundance
+  profiles, descriptive plots, and explicit exploratory CLR/Mann–Whitney tests
+  for two independent groups with BY/BH multiple-testing correction.
+- Fix database setup elapsed-time reporting and diagnose database subdirectories
+  supplied in place of the database root.
+- Keep MEGAHIT scratch on the system temporary filesystem so compressed-read
+  named pipes work when results are on Windows-mounted WSL drives.
+- Honor configured annotation threads unless explicitly overridden on the CLI.
+- Retain the complete MD5 in validation evidence rather than a truncated prefix.
+
 - Count only aligned bases for gene depth and midpoint assignment, exclude
   alignments with unverifiable identity, and hash read contents before reusing
   gene abundance results.

@@ -70,7 +70,10 @@ DATABASES = {
         provenance_url="http://eggnog5.embl.de/",
     ),
     "amr": DatabaseSpec(
-        "amr", "AMRFinderPlus database", "pending", "planned", None, None,
+        "amr", "AMRFinderPlus core + selected virulence/stress data",
+        "tool-compatible release recorded at installation", "available", None, None,
+        url="https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/",
+        provenance_url="https://github.com/ncbi/amr/wiki/AMRFinderPlus-database",
     ),
     "virulence": DatabaseSpec(
         "virulence", "VFDB Set A", "pending", "planned", None, None,
@@ -108,7 +111,7 @@ def database_rows(db_root: Path) -> list[dict[str, str]]:
         size = (
             f"{spec.download_gb:g} GB download / {spec.installed_gb:g} GB installed"
             if spec.download_gb is not None
-            else "not finalized"
+            else "upstream release size" if spec.status == "available" else "not finalized"
         )
         rows.append(
             {
@@ -139,6 +142,14 @@ def is_installed(key: str, db_root: Path) -> bool:
                 "eggnog_proteins.dmnd",
             )
         )
+    if key == "amr":
+        from metaquest.core.screening import ScreeningError, resolve_amr_database
+
+        try:
+            resolve_amr_database(target)
+        except ScreeningError:
+            return False
+        return True
     return False
 
 
@@ -439,6 +450,52 @@ def _install_functional(
     return target
 
 
+def _install_amr(db_root: Path, target: Path, notify) -> Path:
+    """Use NCBI's updater, retaining its versioned layout and native thresholds."""
+    from metaquest.core.screening import AMR_FILES, resolve_amr_database
+
+    updater = shutil.which("amrfinder_update")
+    tool = shutil.which("amrfinder")
+    if not updater or not tool:
+        raise DatabaseSetupError(
+            "AMRFinderPlus is required; install environment/screening.yml separately and add its bin directory to PATH (see docs/installation.md)"
+        )
+    if shutil.disk_usage(db_root).free < 2 * 1024**3:
+        raise DatabaseSetupError("AMRFinderPlus setup requires at least 2 GiB of free working space")
+    with tempfile.TemporaryDirectory(prefix=".metaquest-amr-", dir=db_root) as temporary:
+        staged = Path(temporary) / "amr"
+        staged.mkdir()
+        if notify:
+            notify("Downloading and indexing the tool-compatible NCBI AMRFinderPlus database")
+        with (staged / "setup.log").open("w", encoding="utf-8") as log:
+            result = subprocess.run([updater, "--database", str(staged)], stdout=log, stderr=log)
+        if result.returncode:
+            tail = (staged / "setup.log").read_text(errors="replace")[-4000:]
+            raise DatabaseSetupError(f"AMRFinderPlus database setup failed: {tail}")
+        database = resolve_amr_database(staged)
+        check = subprocess.run([tool, "--database", str(database), "--database_version"],
+                               capture_output=True, text=True)
+        if check.returncode:
+            raise DatabaseSetupError(f"AMRFinderPlus database validation failed: {check.stderr}")
+        manifest = {
+            **asdict(DATABASES["amr"]), "installed_at": datetime.now(timezone.utc).isoformat(),
+            "release": (database / "version.txt").read_text().strip(),
+            "validation": (check.stdout + check.stderr).strip(),
+            "sha256": {name: _sha256(database / name) for name in AMR_FILES},
+        }
+        (staged / "metaquest-db.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        previous = Path(temporary) / "previous"
+        if target.exists():
+            target.replace(previous)
+        try:
+            staged.replace(target)
+        except Exception:
+            if previous.exists():
+                previous.replace(target)
+            raise
+    return target
+
+
 def install_database(
     key: str,
     db_root: Path,
@@ -467,8 +524,10 @@ def install_database(
             suggestions=["Move it aside or rerun with --force to replace it."],
         )
 
-    required_bytes = int((spec.download_gb + spec.installed_gb + 1) * 1024**3)
     db_root.mkdir(parents=True, exist_ok=True)
+    if key == "amr":
+        return _install_amr(db_root, target, notify)
+    required_bytes = int((spec.download_gb + spec.installed_gb + 1) * 1024**3)
     if notify:
         notify(
             f"Disk preflight: {spec.download_gb:g} GB download, "

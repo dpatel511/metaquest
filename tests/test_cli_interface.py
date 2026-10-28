@@ -29,8 +29,23 @@ def test_database_help_uses_metaquest_managed_commands():
     assert "Kraken database builders" in help_text
 
 
-def test_compare_stub_does_not_require_legacy_inputs():
-    assert create_parser().parse_args(['compare']).command == 'compare'
+def test_compare_requires_an_explicit_sample_sheet():
+    with pytest.raises(SystemExit):
+        create_parser().parse_args(['compare'])
+    assert create_parser().parse_args(['compare', '--sample-sheet', 'samples.tsv']).command == 'compare'
+
+
+def test_compare_force_cannot_move_its_source_samples(tmp_path):
+    sample = tmp_path / "sample"
+    sample.mkdir()
+    (sample / "analysis_metadata.json").write_text("original")
+    sheet = tmp_path / "samples.tsv"
+    sheet.write_text("sample_id\tresult_dir\none\tsample\ntwo\tother\n")
+    parser = create_parser()
+    args = parser.parse_args(["compare", "--sample-sheet", str(sheet), "--output", str(sample), "--force"])
+    with pytest.raises(SystemExit):
+        _prepare_output_directory(args, parser)
+    assert (sample / "analysis_metadata.json").read_text() == "original"
 
 
 def test_global_output_options_can_follow_command():
@@ -72,6 +87,8 @@ def test_functional_workflow_controls_are_explicit():
     assert default.taxonomy_only is False and default.skip_functional is False
     assert taxonomy.taxonomy_only is True
     assert genes_only.skip_functional is True
+    assert default.annotation_threads is None  # YAML controls threads unless explicitly overridden
+    assert parser.parse_args(["run", "--single", "reads.fastq", "--annotation-threads", "3"]).annotation_threads == 3
 
 
 def test_force_and_resume_are_explicit_and_mutually_exclusive():

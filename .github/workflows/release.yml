@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
@@ -18,12 +19,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Require successful CI for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=20" --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")][0].conclusion')
+          if [ "$conclusion" != success ]; then
+            echo "::error::This commit needs a successful push or manual CI run before publication."
+            exit 1
+          fi
       - name: Validate tag and package version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           python -m pip install packaging
-          PYTHONPATH=src python -c 'import os; from packaging.version import Version; from metaquest.config import __version__; tag=os.environ["RELEASE_TAG"]; assert Version(tag.removeprefix("v")) == Version(__version__), "tag {} does not match {}".format(tag, __version__)'
+          PYTHONPATH=src python -c 'import os; from packaging.version import Version; from metaquest.config import __version__; tag=os.environ["RELEASE_TAG"]; version=Version(__version__); assert Version(tag.removeprefix("v")) == version, "tag {} does not match {}".format(tag, __version__); assert version.is_prerelease == (os.environ["RELEASE_PRERELEASE"] == "true"), "GitHub prerelease flag must match package version"'
       - name: Run release checks
         run: |
           python -m pip install ".[test]" ruff

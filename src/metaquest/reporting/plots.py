@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from collections import Counter
 
 import matplotlib
 
@@ -60,6 +61,27 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
     sample = Path(ctx.output_dir).name
     generated: list[Path] = []
 
+    validation_rows = []
+    for report in getattr(ctx, "metadata", {}).get("validation", {}).get("reports", []):
+        bases = report.get("total_bases", 0)
+        if bases:
+            for threshold in (20, 30):
+                validation_rows.append({"file": Path(report["file_path"]).name,
+                                        "metric": f"Q{threshold} bases",
+                                        "percent": report[f"q{threshold}_bases"] / bases * 100,
+                                        "reads_analyzed": report["total_sequences"],
+                                        "sampling_limited": report.get("sampling_limited", False)})
+    if validation_rows:
+        table = pd.DataFrame(validation_rows)
+        table.to_csv(data_dir / "validation_quality.tsv", sep="\t", index=False)
+        fig, ax = plt.subplots(figsize=(7.5, 4.2))
+        sns.barplot(data=table, x="file", y="percent", hue="metric", ax=ax)
+        ax.set(ylim=(0, 100), xlabel="Input file", ylabel="Analyzed bases meeting threshold (%)",
+               title=f"{sample}: input FASTQ quality in the validation sample")
+        ax.tick_params(axis="x", labelrotation=15)
+        ax.legend(title="Base quality", bbox_to_anchor=(1.02, 1), loc="upper left")
+        generated += _save(fig, output / "validation_quality", config.plot_formats, config.plot_dpi)
+
     if ctx.preprocessing and ctx.preprocessing.get("before"):
         before, after = ctx.preprocessing["before"], ctx.preprocessing["after"]
         table = pd.DataFrame([
@@ -73,6 +95,7 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
         sns.barplot(data=table, x="metric", y="percent", hue="stage", ax=ax)
         ax.set(ylim=(0, 100), xlabel="Quality threshold", ylabel="Bases meeting threshold (%)")
         ax.set_title(f"{sample}: read quality before and after preprocessing")
+        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
         for container in ax.containers:
             ax.bar_label(container, fmt="%.1f%%", padding=2, fontsize=8)
         generated += _save(fig, output / "qc_metrics", config.plot_formats, config.plot_dpi)
@@ -136,7 +159,9 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
         lengths = pd.DataFrame({"contig_length_bp": ctx.assembly.lengths})
         lengths.to_csv(data_dir / "assembly_contig_lengths.tsv", sep="\t", index=False)
         fig, ax = plt.subplots(figsize=(6.4, 4.2))
-        bins = np.geomspace(lengths["contig_length_bp"].min(), lengths["contig_length_bp"].max(), 40)
+        smallest = lengths["contig_length_bp"].min()
+        largest = max(smallest + 1, lengths["contig_length_bp"].max())
+        bins = np.geomspace(smallest, largest, 40)
         sns.histplot(data=lengths, x="contig_length_bp", bins=bins, ax=ax)
         ax.set_xscale("log")
         ax.set(xlabel="Contig length (bp)", ylabel="Contig count", title=f"{sample}: assembly contig-length distribution")
@@ -158,7 +183,7 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
 
     if ctx.annotation and ctx.annotation.functional_category_summary:
         source = pd.read_csv(ctx.annotation.functional_category_summary, sep="\t")
-        for namespace in ("COG", "KO", "GO"):
+        for namespace in ("COG", "KO", "EC", "GO"):
             table = source[source["namespace"] == namespace].nlargest(config.top_functional_terms, "gene_count")
             if table.empty:
                 continue
@@ -177,7 +202,7 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
     abundance = getattr(ctx, "abundance", None)
     if abundance and abundance.functional_abundance:
         source = pd.read_csv(abundance.functional_abundance, sep="\t")
-        for namespace in ("COG", "KO"):
+        for namespace in ("COG", "KO", "EC", "GO"):
             table = source[source["namespace"] == namespace].nlargest(config.top_functional_terms, "tpm")
             if table.empty:
                 continue
@@ -194,4 +219,55 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
             sns.barplot(data=table, y="display_term", x="tpm", color=sns.color_palette()[1], ax=ax)
             ax.set(xlabel="Summed gene TPM", ylabel=f"{namespace} term", title=f"{sample}: most abundant {namespace} terms")
             generated += _save(fig, output / stem, config.plot_formats, config.plot_dpi)
+    if ctx.annotation:
+        gff = getattr(ctx.annotation, "gene_prediction_dir", Path(ctx.output_dir) / "gene_prediction") / "genes.gff3"
+        lengths, partials = Counter(), Counter()
+        if gff.is_file():
+            with gff.open() as handle:
+                for line in handle:
+                    if line.startswith("#"):
+                        continue
+                    fields = line.rstrip().split("\t")
+                    if len(fields) != 9 or fields[2] != "CDS":
+                        continue
+                    length = int(fields[4]) - int(fields[3]) + 1
+                    lengths[min(length // 100, 100)] += 1
+                    attrs = dict(item.split("=", 1) for item in fields[8].split(";") if "=" in item)
+                    partials["Complete" if attrs.get("partial") == "00" else "Partial or unknown"] += 1
+        if lengths:
+            table = pd.DataFrame([{"length_bin_start_bp": key * 100, "gene_count": value}
+                                  for key, value in sorted(lengths.items())])
+            table.to_csv(data_dir / "gene_prediction_lengths.tsv", sep="\t", index=False)
+            fig, axes = plt.subplots(1, 2, figsize=(10, 4.2))
+            axes[0].bar(table["length_bin_start_bp"], table["gene_count"], width=90, color="#177d8d")
+            axes[0].set(xlabel="CDS length bin start (bp; ≥10 kb pooled)", ylabel="Predicted genes", title="Gene lengths")
+            pd.DataFrame(list(partials.items()), columns=["status", "gene_count"]).to_csv(data_dir / "gene_prediction_completeness.tsv", sep="\t", index=False)
+            axes[1].bar(list(partials), list(partials.values()), color=["#177d8d", "#d3a54e"])
+            axes[1].set(ylabel="Predicted genes", title="Gene completeness")
+            fig.suptitle(f"{sample}: gene prediction (GFF coordinates: 1-based inclusive)")
+            generated += _save(fig, output / "gene_prediction_lengths", config.plot_formats, config.plot_dpi)
+    screening = getattr(ctx, "screening", None)
+    if screening:
+        candidates = pd.read_csv(Path(ctx.output_dir) / screening["taxon_table"], sep="\t")
+        candidates.to_csv(data_dir / "screening_taxa.tsv", sep="\t", index=False)
+        if not candidates.empty:
+            table = candidates.head(config.top_taxa)
+            fig, ax = plt.subplots(figsize=(8, max(4, len(table) * .3)))
+            sns.barplot(data=table, y="name", x="fraction_all_input", color="#177d8d", ax=ax)
+            ax.set(xlabel=f"Fraction of all cleaned input {screening['count_unit']}", ylabel="Catalog taxon candidate",
+                   title=f"{sample}: human-associated bacterial screening candidates")
+            generated += _save(fig, output / "screening_taxa", config.plot_formats, config.plot_dpi)
+        types = pd.DataFrame([{"evidence_type": key, "matches": screening["protein_types"].get(key, 0)}
+                              for key in ("AMR", "VIRULENCE", "STRESS")])
+        types.to_csv(data_dir / "screening_proteins.tsv", sep="\t", index=False)
+        fig, ax = plt.subplots(figsize=(6.4, 4.2))
+        sns.barplot(data=types, x="evidence_type", y="matches", color="#177d8d", ax=ax)
+        ax.set(xlabel="Curated evidence class", ylabel="Protein evidence rows",
+               title=f"{sample}: AMRFinderPlus matches (not clinical risk)")
+        ax.set_ylim(0, max(1, types["matches"].max() * 1.15))
+        ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
+        if not types["matches"].any():
+            ax.text(.5, .5, f"No curated protein matches reported\n{screening['screened_genes']} proteins screened",
+                    ha="center", va="center", transform=ax.transAxes, color="#526779")
+        generated += _save(fig, output / "screening_proteins", config.plot_formats, config.plot_dpi)
     return generated

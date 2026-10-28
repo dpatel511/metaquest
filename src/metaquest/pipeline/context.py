@@ -82,6 +82,7 @@ class PipelineContext:
     assembly: AssemblyResult | None = None
     annotation: AnnotationResult | None = None
     abundance: AbundanceResult | None = None
+    screening: dict[str, Any] | None = None
 
     # Metadata for reproducibility
     metadata: dict[str, Any] = field(default_factory=dict)

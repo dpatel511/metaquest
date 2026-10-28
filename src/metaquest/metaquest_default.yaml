@@ -54,3 +54,9 @@ reporting:
     - png
   plot_dpi: 300
   color_palette: colorblind
+
+screening:
+  enabled: false           # enable with --screen-pathogens; research screening
+  database_dir: null       # defaults to base_dir/amr (AMRFinderPlus --plus)
+  taxa_catalog: null       # defaults to the bundled human-associated bacterial targets
+  threads: 4

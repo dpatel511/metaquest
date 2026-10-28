@@ -9,6 +9,7 @@ from importlib.metadata import PackageNotFoundError, metadata
 EXPECTED_LICENSE_MARKERS = {
     "numpy": ("bsd-3-clause", "bsd 3-clause", "bsd license"),
     "pandas": ("bsd-3-clause", "bsd 3-clause", "bsd license"),
+    "scipy": ("bsd-3-clause", "bsd 3-clause", "bsd license"),
     "biopython": (
         "licenseref-biopython-license-agreement",
         "biopython license agreement",
