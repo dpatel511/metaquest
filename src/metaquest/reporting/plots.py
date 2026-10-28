@@ -266,5 +266,8 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
                title=f"{sample}: AMRFinderPlus matches (not clinical risk)")
         ax.set_ylim(0, max(1, types["matches"].max() * 1.15))
         ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
+        if not types["matches"].any():
+            ax.text(.5, .5, f"No curated protein matches reported\n{screening['screened_genes']} proteins screened",
+                    ha="center", va="center", transform=ax.transAxes, color="#526779")
         generated += _save(fig, output / "screening_proteins", config.plot_formats, config.plot_dpi)
     return generated
