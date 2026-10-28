@@ -66,6 +66,8 @@ Before publishing:
   The distribution job tests a wheel in an isolated environment outside the source
   tree. Conda CI installs screening data with MetaQuest and sets
   `METAQUEST_TEST_AMR_DB`, so the native positive/negative test runs.
+  The core and screening tool environments resolve separately to avoid their
+  incompatible DIAMOND/zlib and AMRFinderPlus/curl constraints.
 - Inspect the native-integration artifact for its JUnit results and database
   manifest. The AMRFinderPlus cache key includes the actual tool version; increment
   its cache revision deliberately when refreshing the selected compatible data.

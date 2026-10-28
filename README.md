@@ -75,6 +75,10 @@ conda activate metaquest
 python -m pip install .
 ~~~
 
+For optional screening, also install `environment/screening.yml` separately and
+append its executables to PATH using the [installation guide](docs/installation.md).
+It isolates AMRFinderPlus's native libraries from eggNOG's older DIAMOND stack.
+
 Inspect and install the taxonomy database:
 
 ~~~bash

@@ -56,7 +56,10 @@ def run_system_check(
         tools['amrfinder'] = '--version'
     for tool, cmd in tools.items():
         if not _check_command(tool, cmd):
-            package = {"emapper.py": "eggnog-mapper", "amrfinder": "ncbi-amrfinderplus",
+            if tool == "amrfinder":
+                errors.append("Tool not found: 'amrfinder'. Install environment/screening.yml separately and add its bin directory to PATH (see docs/installation.md).")
+                continue
+            package = {"emapper.py": "eggnog-mapper",
                        "bbmap.sh": "bbmap", "reformat.sh": "bbmap"}.get(tool, tool)
             errors.append(f"Tool not found: '{tool}'. Please install it, e.g., via 'conda install -c bioconda {package}'.")
 

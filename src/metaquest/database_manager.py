@@ -458,7 +458,7 @@ def _install_amr(db_root: Path, target: Path, notify) -> Path:
     tool = shutil.which("amrfinder")
     if not updater or not tool:
         raise DatabaseSetupError(
-            "AMRFinderPlus is required; install 'ncbi-amrfinderplus' in the active environment"
+            "AMRFinderPlus is required; install environment/screening.yml separately and add its bin directory to PATH (see docs/installation.md)"
         )
     if shutil.disk_usage(db_root).free < 2 * 1024**3:
         raise DatabaseSetupError("AMRFinderPlus setup requires at least 2 GiB of free working space")

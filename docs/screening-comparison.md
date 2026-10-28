@@ -17,9 +17,10 @@ metaquest run --db-dir databases \
   --screen-pathogens --output results/sample
 ```
 
-The repository Conda environment includes `ncbi-amrfinderplus`. Existing
-environments can install it with
-`conda install -c conda-forge -c bioconda 'ncbi-amrfinderplus>=4.2.7,<5'`.
+Install `environment/screening.yml` separately and append its bin directory to
+PATH as shown in [installation](installation.md). Its modern curl/zlib stack
+cannot share the older DIAMOND stack required by eggNOG-mapper. Keep MetaQuest's
+core Python environment active while running the commands above.
 Screening is optional by default. It needs species-level classification (`S`)
 and gene prediction, so it cannot be combined with `--taxonomy-only`.
 It can run with `--skip-functional` or `--skip-abundance`; unavailable abundance
@@ -121,6 +122,9 @@ pseudocount, then computes the centered log-ratio (natural log minus the mean
 log across retained features for each sample). Each feature receives a
 two-sided Mann–Whitney U test on these CLR values. Its null concerns equal
 distributions; a median difference alone does not define that null.
+If every pooled CLR value for a feature is identical, all ranks are tied: the
+report records centered U, zero rank-biserial effect and p=1. Other undefined
+p-values are rejected rather than silently replaced or passed to FDR correction.
 
 `group_tests.tsv` records U, raw p, FDR-adjusted q, median CLR difference
 (comparison minus reference), rank-biserial effect, prevalence and sample counts.

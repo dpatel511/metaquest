@@ -80,11 +80,13 @@ uses these files immediately after Pyrodigal gene prediction.
 
 ## Install screening data
 
-Install the external executable from the repository environment, then use
-MetaQuest's database command:
+Install the isolated screening tool environment, then use MetaQuest's database
+command while the core environment is active:
 
 ~~~bash
-conda install -c conda-forge -c bioconda 'ncbi-amrfinderplus>=4.2.7,<5'
+conda env create -f environment/screening.yml
+conda activate metaquest
+export PATH="$PATH:$(conda run -n metaquest-screening bash -c 'printf "%s/bin" "$CONDA_PREFIX"')"
 metaquest databases --db-dir /data/metaquest-db --database amr
 metaquest check --db-dir /data/metaquest-db --screen-pathogens
 ~~~

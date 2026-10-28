@@ -155,7 +155,15 @@ def group_tests(
     for feature in kept:
         x = transformed.loc[first, feature].to_numpy()
         y = transformed.loc[second, feature].to_numpy()
-        result = mannwhitneyu(x, y, alternative="two-sided", method="auto", nan_policy="raise")
+        # With one pooled value every rank is tied: U is centered and there is
+        # no evidence of a group difference. Some SciPy versions return NaN here.
+        if np.all(x == x[0]) and np.all(y == x[0]):
+            statistic, p_value = len(first) * len(second) / 2, 1.0
+        else:
+            result = mannwhitneyu(x, y, alternative="two-sided", method="auto", nan_policy="raise")
+            statistic, p_value = float(result.statistic), float(result.pvalue)
+        if not np.isfinite(p_value) or not 0 <= p_value <= 1:
+            raise ComparisonError(f"Undefined Mann-Whitney p-value for feature {feature}; inspect the study profiles")
         rows.append({
             "feature_id": feature, "comparison_group": other, "reference_group": reference_group,
             "n_comparison": len(first), "n_reference": len(second),
@@ -163,8 +171,8 @@ def group_tests(
             "mean_relative_comparison": relative.loc[first, feature].mean(),
             "mean_relative_reference": relative.loc[second, feature].mean(),
             "median_clr_difference": float(np.median(x) - np.median(y)),
-            "rank_biserial_effect": float(2 * result.statistic / (len(first) * len(second)) - 1),
-            "u_statistic": float(result.statistic), "p_value": float(result.pvalue),
+            "rank_biserial_effect": float(2 * statistic / (len(first) * len(second)) - 1),
+            "u_statistic": float(statistic), "p_value": p_value,
         })
     results = pd.DataFrame(rows)
     results["q_value"] = false_discovery_control(results["p_value"].to_numpy(), method=fdr_method)
@@ -178,6 +186,7 @@ def group_tests(
         "reference_group": reference_group, "comparison_group": other,
         "design": "independent unpaired samples; no covariate adjustment",
         "null": "equal distributions of feature CLR values across the two groups",
+        "constant_features": "A single pooled CLR value is reported with U=n1*n2/2 and p=1",
     }
 
 

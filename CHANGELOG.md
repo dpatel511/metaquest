@@ -14,6 +14,9 @@ limited to their documented scope; runtime checks do not establish biological ac
   exact TestPyPI package after upload.
 - Add reproducible acceptance commands and a checker for result accounting,
   gene-ID joins, per-stage artifacts and embedded report links/images.
+- Resolve core and screening native tools in separate environments to avoid
+  eggNOG/DIAMOND and AMRFinderPlus curl/zlib conflicts. Handle the all-tied CLR
+  case explicitly and reject other undefined statistical p-values.
 
 - Add optional `--screen-pathogens` research screening with exact species-taxid
   targets and native AMRFinderPlus AMR/selected virulence/stress evidence;

@@ -1,6 +1,8 @@
 # Reproducible beta acceptance checks
 
 Use an installed beta wheel and the repository's complete Conda environment.
+For screening, also install the isolated screening environment and append its
+bin directory as described in [installation](installation.md).
 Run `metaquest --version` and save its output. Databases and native tools must
 be the same across samples in a comparison. This checks runtime behavior and
 accounting; it does not estimate sensitivity, specificity or clinical utility.

@@ -44,6 +44,25 @@ For a regular non-editable installation:
 python -m pip install .
 ~~~
 
+Optional screening uses a separate native-tool environment. eggNOG-mapper's
+DIAMOND `<2.1` requires zlib `<1.3`, while current AMRFinderPlus requires a newer
+curl/zlib stack; installing both into one environment does not solve reliably.
+Keep the core environment active and append the screening executables:
+
+~~~bash
+conda env create -f environment/screening.yml
+conda activate metaquest
+export PATH="$PATH:$(conda run -n metaquest-screening bash -c 'printf "%s/bin" "$CONDA_PREFIX"')"
+amrfinder --version
+metaquest databases --db-dir /data/metaquest-db --database amr
+metaquest check --db-dir /data/metaquest-db --screen-pathogens
+~~~
+
+Repeat that PATH export in new shells where screening is needed. Appending keeps
+the core environment's Python first. AMRFinderPlus retains its own native library
+and helper-program paths. Do not downgrade the screening environment's shared
+libraries to force it into the core environment.
+
 Confirm the CLI:
 
 ~~~bash

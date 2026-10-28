@@ -74,6 +74,20 @@ def test_identical_profiles_do_not_produce_significance(tmp_path):
                    reference_group="control", pseudocount=1e-6)
     tests = pd.read_csv(tmp_path / "out/group_tests.tsv", sep="\t")
     assert (tests["p_value"] == 1).all() and not tests["passes_fdr"].any()
+    assert (tests["u_statistic"] == 4.5).all()
+    assert (tests["rank_biserial_effect"] == 0).all()
+
+
+def test_undefined_nonconstant_p_values_are_rejected(monkeypatch):
+    from types import SimpleNamespace
+    import scipy.stats
+
+    monkeypatch.setattr(scipy.stats, "mannwhitneyu", lambda *a, **k: SimpleNamespace(statistic=0., pvalue=float("nan")))
+    samples = pd.DataFrame({"group": ["a"] * 3 + ["b"] * 3})
+    values = pd.DataFrame({"one": [.1, .2, .3, .6, .7, .8], "two": [.9, .8, .7, .4, .3, .2]})
+    with pytest.raises(ComparisonError, match="Undefined Mann-Whitney"):
+        group_tests(values, samples, group_column="group", reference_group="a", pseudocount=1e-6,
+                    fdr_method="by", alpha=.05, min_prevalence=.1)
 
 
 def test_duplicate_samples_and_provenance_mismatch_are_rejected(tmp_path):

@@ -84,6 +84,12 @@ jobs:
       - name: Install MetaQuest
         shell: bash -el {0}
         run: python -m pip install --no-deps -e .
+      - name: Install the isolated screening tool environment
+        shell: bash -el {0}
+        run: |
+          micromamba create --yes --name metaquest-screening --file environment/screening.yml
+          test -x "$MAMBA_ROOT_PREFIX/envs/metaquest-screening/bin/amrfinder"
+          echo "$MAMBA_ROOT_PREFIX/envs/metaquest-screening/bin" >> "$GITHUB_PATH"
       - name: Verify external tools
         shell: bash -el {0}
         run: |
