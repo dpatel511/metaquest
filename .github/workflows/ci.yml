@@ -64,8 +64,12 @@ jobs:
           python -m twine check dist/*
       - name: Verify wheel installation
         run: |
-          python -m pip install --force-reinstall dist/*.whl
-          metaquest --version
+          python -m venv "$RUNNER_TEMP/metaquest-wheel"
+          "$RUNNER_TEMP/metaquest-wheel/bin/python" -m pip install dist/*.whl pytest
+          cp -R tests "$RUNNER_TEMP/wheel-tests"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/metaquest-wheel/bin/metaquest" --version
+          "$RUNNER_TEMP/metaquest-wheel/bin/python" -m pytest -q wheel-tests
 
   conda:
     name: Conda integration (Python 3.11)
@@ -88,6 +92,29 @@ jobs:
           megahit --version
           diamond version
           emapper.py --version
+          amrfinder --version
+      - name: Record screening tool version
+        id: amr-version
+        shell: bash -el {0}
+        run: echo "version=$(amrfinder --version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: test_results/ci-databases/amr
+          key: amrfinderplus-${{ runner.os }}-${{ steps.amr-version.outputs.version }}-v1
+      - name: Install and validate screening data through MetaQuest
+        shell: bash -el {0}
+        run: metaquest --no-color databases --database amr --db-dir test_results/ci-databases
       - name: Run tests in the complete tool environment
         shell: bash -el {0}
-        run: python -m pytest -q
+        env:
+          METAQUEST_TEST_AMR_DB: ${{ github.workspace }}/test_results/ci-databases/amr
+        run: python -m pytest -q --junitxml=test_results/ci-native-tests.xml
+      - name: Retain native test and database provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-integration-evidence
+          path: |
+            test_results/ci-native-tests.xml
+            test_results/ci-databases/amr/metaquest-db.json
+          if-no-files-found: warn

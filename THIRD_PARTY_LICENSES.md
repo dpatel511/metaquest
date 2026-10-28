@@ -14,6 +14,7 @@ These packages are installed as dependencies of the MetaQuest Python package.
 | pandas | `>=2.0` | BSD-3-Clause |
 | Matplotlib | `>=3.8` | PSF-based |
 | Seaborn | `>=0.13` | BSD-3-Clause |
+| SciPy | `>=1.11` | BSD-3-Clause |
 | Biopython | `>=1.81` | Biopython License Agreement |
 | Pyrodigal | `>=3.7.1,<4` | GPL-3.0-or-later |
 | PyYAML | `>=6.0` | MIT |
@@ -35,6 +36,7 @@ They are not copied into MetaQuest wheels or source distributions.
 | DIAMOND | `>=2.0.11,<2.1` | GPL-3.0 | <https://github.com/bbuchfink/diamond> |
 | eggNOG-mapper | `2.1.15` | AGPL-3.0-only | <https://github.com/eggnogdb/eggnog-mapper> |
 | BBTools/BBMap | `>=39` | BSD-3-Clause-LBNL | <https://sourceforge.net/projects/bbmap/> |
+| AMRFinderPlus | `>=4.2.7,<5` | U.S. Government work / public domain notice | <https://github.com/ncbi/amr> |
 
 eggNOG-mapper is executed as a separate command. Version 2.1.15 is the final
 v2 release compatible with the eggNOG v5.0.2 database. MetaQuest does not
@@ -52,6 +54,14 @@ MetaQuest Python distribution.
 |---|---:|---|
 | `taxonomy` | Standard-8, 2026-06-26 | Prebuilt Kraken 2 index from the Langmead Lab AWS index, derived from NCBI taxonomy and sequence resources |
 | `functional` | eggNOG 5.0.2 | Files downloaded from the official eggNOG v5 server |
+| `amr` | Tool-compatible NCBI release, recorded at installation | AMRFinderPlus database, including selected plus virulence/stress families; NCBI U.S. Government work notice |
+
+The bundled `data/human_associated_taxa.tsv` is a MetaQuest research screening
+subset associated with groups discussed in the WHO 2024 bacterial priority
+pathogens report. Taxonomy IDs were checked against NCBI Taxonomy. It is not
+the complete WHO list and does not reproduce WHO resistance-priority labels.
+Species classification does not establish the resistance phenotype used in
+WHO prioritization. Each row records its source and interpretation limits.
 
 Software licenses do not automatically grant rights in third-party database
 content. The downloader records URLs, versions, checksums, and provenance in

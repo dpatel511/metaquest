@@ -72,7 +72,7 @@ metaquest run \
   --output results/sample
 ~~~
 
-This runs validation, Kraken2, Bracken, and descriptive reporting.
+This runs validation, fastp preprocessing, Kraken2, Bracken, and reporting.
 
 ### Assembly, gene prediction, and functional annotation
 
@@ -84,8 +84,8 @@ metaquest run \
 ~~~
 
 This additionally runs MEGAHIT, Pyrodigal, eggNOG-mapper, and BBMap gene
-abundance. Use `--skip-functional` when only the predicted gene catalog is
-required, and `--skip-abundance` to skip read mapping.
+abundance. Use `--skip-functional` to skip eggNOG annotation while retaining
+gene prediction and gene abundance, and `--skip-abundance` to skip read mapping.
 
 Useful options:
 
@@ -96,7 +96,8 @@ Useful options:
 | `--skip-validation` | bypass input validation |
 | `--taxonomy-only` | taxonomy-only execution |
 | `--skip-annotation` | deprecated alias for `--taxonomy-only` |
-| `--skip-functional` | stop after Pyrodigal gene prediction |
+| `--skip-functional` | skip eggNOG annotation; retain gene prediction and abundance |
+| `--screen-pathogens` | species-target and curated AMRFinderPlus protein evidence |
 | `--skip-abundance` | skip read mapping and gene/functional abundance |
 | `--annotation-threads N` | eggNOG-mapper worker threads |
 | `--plot-formats svg png pdf` | override configured figure formats |
@@ -104,12 +105,23 @@ Useful options:
 | `--force` | preserve the existing output as a timestamped backup and start fresh |
 
 Without `--resume` or `--force`, a nonempty output directory is rejected.
+MEGAHIT scratch uses the system temporary filesystem (or `TMPDIR`). Under WSL,
+keep `TMPDIR` on a Linux filesystem with space for assembly intermediates;
+Windows-mounted result directories do not support its compressed-read FIFOs.
 
 ## Compare
 
-The `compare` command name is retained for compatibility, but the experimental
-legacy implementation has been removed. It exits with an explanatory error
-until a validated comparative workflow is built.
+Provide a CSV/TSV sample sheet with unique `sample_id` and `result_dir` columns.
+Paths are relative to the sheet. The descriptive mode aligns full profiles by
+feature ID and exports composition, QC and Bray–Curtis distances:
+
+~~~bash
+metaquest compare --sample-sheet samples.tsv --output comparisons/taxonomy
+~~~
+
+Formal testing initially supports two independent groups. Supply a group column,
+reference label and an explicit proportion-scale pseudocount. See
+[screening and comparison](screening-comparison.md) for assumptions and examples.
 
 ## Setup databases
 
@@ -163,6 +175,15 @@ results/sample/
 │   ├── eggnog_mapper.log
 │   ├── summary.json
 │   └── completion.json
+├── gene_abundance/
+│   ├── gene_abundance.tsv
+│   └── functional_abundance.tsv
+├── screening/                   # when --screen-pathogens is enabled
+│   ├── taxon_candidates.tsv
+│   ├── protein_evidence.tsv
+│   ├── amrfinder.tsv
+│   └── summary.json
+├── reports/                     # one HTML, JSON and TSV per stage
 ├── 01_taxonomic_report.txt
 ├── 02_assembly_report.txt
 ├── 03_functional_report.txt

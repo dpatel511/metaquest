@@ -3,6 +3,7 @@ Metagenomic Assembly Module — MEGAHIT orchestration.
 """
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import List
 
 from Bio import SeqIO
@@ -47,9 +48,13 @@ def assemble_reads_to_fasta(
 
     cmd.extend(["-o", str(megahit_outdir), "--force"])
 
-    returncode, _, stderr = formatter.run_subprocess(
-        cmd, "Running MEGAHIT assembler", show_command=True
-    )
+    # MEGAHIT creates POSIX FIFOs for compressed reads. Windows-mounted output
+    # directories under WSL cannot provide them; keep scratch on the system temp filesystem.
+    with TemporaryDirectory(prefix="metaquest-megahit-") as temporary:
+        cmd.extend(["--tmp-dir", temporary])
+        returncode, _, stderr = formatter.run_subprocess(
+            cmd, "Running MEGAHIT assembler", show_command=True
+        )
 
     if returncode != 0:
         raise AssemblyError(f"MEGAHIT failed (exit {returncode}). Check log: {megahit_outdir}/log")

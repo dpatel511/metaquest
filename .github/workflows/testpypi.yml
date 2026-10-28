@@ -5,21 +5,36 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
     name: Build test distributions
     runs-on: ubuntu-latest
+    outputs:
+      package-version: ${{ steps.package-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Require successful CI for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=20" --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")][0].conclusion')
+          if [ "$conclusion" != success ]; then
+            echo "::error::This commit needs a successful push or manual CI run before publication."
+            exit 1
+          fi
       - name: Build and inspect distributions
         run: |
           python -m pip install build twine
           python -m build
           python -m twine check dist/*
+      - name: Record package version
+        id: package-version
+        run: PYTHONPATH=src python -c 'import os; from metaquest.config import __version__; open(os.environ["GITHUB_OUTPUT"], "a").write("version=" + __version__ + "\n")'
       - uses: actions/upload-artifact@v4
         with:
           name: python-distributions
@@ -43,3 +58,25 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+
+  verify:
+    name: Install published TestPyPI wheel
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies from PyPI and the exact package from TestPyPI
+        env:
+          PACKAGE_VERSION: ${{ needs.build.outputs.package-version }}
+        run: |
+          python -m venv "$RUNNER_TEMP/testpypi-wheel"
+          "$RUNNER_TEMP/testpypi-wheel/bin/python" -m pip install -r requirements.txt
+          "$RUNNER_TEMP/testpypi-wheel/bin/python" -m pip install --no-deps --index-url https://test.pypi.org/simple/ "metaquest-bio==$PACKAGE_VERSION"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/testpypi-wheel/bin/metaquest" --version
+          "$RUNNER_TEMP/testpypi-wheel/bin/metaquest" run --help
+          "$RUNNER_TEMP/testpypi-wheel/bin/metaquest" compare --help
+          "$RUNNER_TEMP/testpypi-wheel/bin/python" -c 'import os; from metaquest.config import __version__; from metaquest.core.screening import DEFAULT_CATALOG; assert __version__ == os.environ["PACKAGE_VERSION"]; assert DEFAULT_CATALOG.is_file()'

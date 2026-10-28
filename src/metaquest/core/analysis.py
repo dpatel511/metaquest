@@ -95,6 +95,8 @@ def run_analysis(input_file, output_dir, cli_args=None):
             config,
             reporting=replace(config.reporting, plot_formats=tuple(plot_formats)),
         )
+    if getattr(cli_args, "screen_pathogens", False):
+        config = replace(config, screening=replace(config.screening, enabled=True))
 
     # Determine read mode
     read_mode = "paired"
@@ -130,6 +132,7 @@ def run_analysis(input_file, output_dir, cli_args=None):
                 "taxonomy_only": skip_annotation,
                 "skip_functional": skip_functional,
                 "skip_abundance": skip_abundance,
+                "screen_pathogens": config.screening.enabled,
                 "low_memory": bool(getattr(cli_args, "low_memory", False)),
             },
         )

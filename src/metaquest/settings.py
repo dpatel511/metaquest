@@ -77,6 +77,14 @@ class PreprocessingConfig:
 
 
 @dataclass(frozen=True)
+class ScreeningConfig:
+    enabled: bool = False
+    database_dir: Path | None = None
+    taxa_catalog: Path | None = None
+    threads: int = 4
+
+
+@dataclass(frozen=True)
 class ReportingConfig:
     top_taxa: int = 20
     top_functional_terms: int = 20
@@ -93,6 +101,7 @@ class MetaQuestConfig:
     annotation: AnnotationConfig = AnnotationConfig()
     abundance: AbundanceConfig = AbundanceConfig()
     preprocessing: PreprocessingConfig = PreprocessingConfig()
+    screening: ScreeningConfig = ScreeningConfig()
     reporting: ReportingConfig = ReportingConfig()
 
 
@@ -120,6 +129,12 @@ def _resolve_db_dir(raw: dict, override: Path | None = None) -> Path:
 
 def _build_databases_config(raw: dict, base_dir: Path) -> DatabasesConfig:
     db = raw.get("databases", {})
+    for profile, marker in (("taxonomy", "hash.k2d"), ("functional", "eggnog.db")):
+        if base_dir.name == profile and (base_dir / marker).is_file():
+            raise ConfigError(
+                f"Database root points inside the {profile} profile: {base_dir}. "
+                f"Use the parent root instead: --db-dir '{base_dir.parent}'"
+            )
     kraken = Path(db.get("kraken_db") or str(base_dir / "taxonomy"))
     functional = Path(db.get("functional_dir") or str(base_dir / "functional"))
     version = db.get("kraken_db_version", "Standard-8 (2026-06-26)")
@@ -192,6 +207,7 @@ def load_config(
         annotation=_build_section(AnnotationConfig, raw, "annotation"),
         abundance=_build_section(AbundanceConfig, raw, "abundance"),
         preprocessing=_build_section(PreprocessingConfig, raw, "preprocessing"),
+        screening=_build_section(ScreeningConfig, raw, "screening"),
         reporting=_build_section(ReportingConfig, raw, "reporting"),
     )
 
@@ -246,6 +262,8 @@ def validate_config(config: MetaQuestConfig | None = None) -> tuple[bool, list[s
         errors.append("preprocessing.length_required must be >= 1")
     if cfg.preprocessing.threads < 1:
         errors.append("preprocessing.threads must be >= 1")
+    if cfg.screening.threads < 1:
+        errors.append("screening.threads must be >= 1")
     if cfg.reporting.top_taxa < 1 or cfg.reporting.top_functional_terms < 1:
         errors.append("reporting top limits must be >= 1")
     if cfg.reporting.plot_dpi < 72:

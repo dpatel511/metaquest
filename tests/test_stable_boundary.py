@@ -377,3 +377,27 @@ def test_stable_report_includes_eggnog_provenance(tmp_path):
     assert summary["annotation"]["eggnog_mapper_version"] == "2.1.15"
     assert summary["annotation"]["eggnog_database_release"] == "5.0.2"
     assert (tmp_path / "03_functional_report.txt").is_file()
+
+
+def test_megahit_scratch_supports_fifos_and_is_cleaned(tmp_path):
+    import os
+    from metaquest.core.assembly import assemble_reads_to_fasta
+
+    scratch = []
+
+    class Formatter:
+        def run_subprocess(self, command, *args, **kwargs):
+            directory = Path(command[command.index("--tmp-dir") + 1])
+            scratch.append(directory)
+            if hasattr(os, "mkfifo"):
+                os.mkfifo(directory / "test-pipe")
+            assembled = tmp_path / "megahit_assembly"
+            assembled.mkdir()
+            (assembled / "final.contigs.fa").write_text(">contig\nACGT\n")
+            return 0, "", ""
+
+        def debug(self, message):
+            pass
+
+    assert assemble_reads_to_fasta(["reads.fastq.gz"], tmp_path, Formatter()).is_file()
+    assert scratch and not scratch[0].exists()

@@ -51,13 +51,25 @@ def _normalize_global_options(argv):
 
 def _prepare_output_directory(args, parser):
     """Enforce explicit fresh, forced, or resumed output behavior."""
-    if args.command != "run":
+    if args.command not in ("run", "compare"):
         return
     output = Path(args.output)
+    if args.command == "compare":
+        from .core.comparison import load_samples
+
+        try:
+            samples = load_samples(args.sample_sheet, args.group_column)
+        except MetaQuestError as exc:
+            parser.error(str(exc))
+        resolved = output.resolve()
+        if any(resolved == Path(path) or resolved in Path(path).parents for path in samples["result_dir"]):
+            parser.error("comparison output must not replace a sample directory or its parent")
+        if resolved == args.sample_sheet.resolve() or resolved in args.sample_sheet.resolve().parents:
+            parser.error("comparison output must not contain the input sample sheet")
     if output.exists() and not output.is_dir():
         parser.error(f"output path is not a directory: {output}")
     exists_with_content = output.exists() and any(output.iterdir())
-    if args.resume:
+    if getattr(args, "resume", False):
         if not exists_with_content or not (output / "analysis_metadata.json").is_file():
             parser.error("--resume requires an existing MetaQuest output directory")
         return
@@ -136,9 +148,9 @@ def setup_annotation_args(parser):
     annot_group.add_argument(
         '--annotation-threads',
         type=int,
-        default=8,
+        default=None,
         metavar='NUM',
-        help="Number of CPU threads for functional annotation (default: 8)"
+        help="Override annotation.threads from configuration (bundled default: 8)"
     )
 
 # ============================================================================
@@ -363,6 +375,8 @@ def create_parser():
         metavar='DIR',
         help='Database root override'
     )
+    parser_check.add_argument('--screen-pathogens', action='store_true',
+                              help='Also verify AMRFinderPlus and its screening database')
 
     # ========================================================================
     # VALIDATE COMMAND
@@ -419,15 +433,17 @@ def create_parser():
             Executes the full MetaQuest pipeline on FASTQ reads:
             
             Pipeline Steps:
-                1. Taxonomic Classification (Kraken2 + Bracken)
-                2. Metagenomic Assembly (MEGAHIT)
-                3. Gene Prediction (Pyrodigal metagenomic mode)
-                4. Functional Annotation (eggNOG-mapper)
-                5. Gene Abundance (BBMap read mapping, TPM)
-                6. Descriptive Report Generation
+                1. FASTQ validation and fastp preprocessing
+                2. Taxonomic Classification (Kraken2 + Bracken)
+                3. Metagenomic Assembly (MEGAHIT)
+                4. Gene Prediction (Pyrodigal metagenomic mode)
+                5. Functional Annotation (eggNOG-mapper)
+                6. Gene Abundance (BBMap read mapping, TPM)
+                7. Research screening (optional --screen-pathogens)
+                8. Per-stage and consolidated reports
             
             Use --taxonomy-only for rapid taxonomic classification, or
-            --skip-functional to stop after gene prediction, or
+            --skip-functional to skip eggNOG annotation, or
             --skip-abundance to skip read mapping and gene abundance.
         """),
         formatter_class=CustomHelpFormatter
@@ -485,6 +501,8 @@ def create_parser():
         action='store_true',
         help="Skip read mapping and gene/functional abundance estimation"
     )
+    parser_analyze.add_argument('--screen-pathogens', action='store_true',
+                                help='Screen human-associated bacterial taxa and curated AMR/virulence protein evidence')
     
     # Add argument groups
     setup_annotation_args(parser_analyze)
@@ -515,15 +533,32 @@ def create_parser():
     # ========================================================================
     # COMPARE COMMAND
     # ========================================================================
-    subparsers.add_parser(
+    parser_compare = subparsers.add_parser(
         'compare',
-        help='Reserved for a future validated comparative workflow',
+        help='Compare complete MetaQuest results using a sample sheet',
         description=(
-            'The experimental comparison implementation was removed. '
-            'This command name is retained for compatibility.'
+            'Align full taxonomy or functional profiles with provenance checks. '
+            'Optionally test two independent groups on CLR relative abundances. '
+            'Tests are exploratory and do not adjust for pairing or covariates.'
         ),
         formatter_class=CustomHelpFormatter,
     )
+    parser_compare.add_argument('--sample-sheet', required=True, type=Path,
+                                help='CSV/TSV with sample_id, result_dir and optional group metadata')
+    parser_compare.add_argument('-o', '--output', default='comparison_results', help='New comparison output directory')
+    parser_compare.add_argument('--force', action='store_true', help='Back up an existing output before comparing')
+    parser_compare.add_argument('--feature', choices=('taxonomy', 'COG', 'KO', 'EC', 'GO'), default='taxonomy')
+    parser_compare.add_argument('--group-column', help='Sample-sheet column containing independent group labels')
+    parser_compare.add_argument('--test', choices=('clr-mannwhitney',), default=None,
+                                help='Explicitly request two-sided Mann-Whitney tests on CLR profiles')
+    parser_compare.add_argument('--reference-group', help='Reference label for signed CLR effects')
+    parser_compare.add_argument('--pseudocount', type=float, default=None,
+                                help='Explicit additive zero replacement on proportion scale, e.g. 1e-6')
+    parser_compare.add_argument('--fdr-method', choices=('by', 'bh'), default='by',
+                                help='Multiple-testing correction: BY (default, arbitrary dependence) or BH')
+    parser_compare.add_argument('--alpha', type=float, default=0.05)
+    parser_compare.add_argument('--min-prevalence', type=float, default=0.1,
+                                help='Group-blind fraction of samples with a nonzero feature (default: 0.1)')
     # ========================================================================
     # SETUP-DB COMMAND
     # ========================================================================
@@ -542,6 +577,7 @@ def create_parser():
                 metaquest databases --list
                 metaquest databases --db-dir /data/metaquest --database taxonomy
                 metaquest databases --db-dir /data/metaquest --database functional
+                metaquest databases --db-dir /data/metaquest --database amr
                 metaquest check --db-dir /data/metaquest
 
             Use these commands instead of running Kraken database builders or
@@ -666,14 +702,13 @@ def main():
             formatter.info("Verifying installation of required tools and databases...")
             
             from .settings import load_config
+            check_config = load_config(Path(args.config) if args.config else None, db_dir=args.db_dir)
             run_system_check(
                 formatter,
-                config=load_config(
-                    Path(args.config) if args.config else None,
-                    db_dir=args.db_dir,
-                ),
+                config=check_config,
                 require_functional=True,
                 require_abundance=True,
+                require_screening=args.screen_pathogens or check_config.screening.enabled,
             )
             
             formatter.success("System check completed successfully")
@@ -735,6 +770,11 @@ def main():
                     Path(args.config) if args.config else None,
                     db_dir=args.db_dir,
                 )
+                screening_requested = args.screen_pathogens or check_config.screening.enabled
+                if taxonomy_only and screening_requested:
+                    from .exceptions import ConfigError
+
+                    raise ConfigError('--screen-pathogens requires gene prediction; omit --taxonomy-only')
                 run_system_check(
                     formatter,
                     config=check_config,
@@ -742,6 +782,7 @@ def main():
                     require_interleaved=bool(args.interleaved),
                     require_functional=not taxonomy_only and not args.skip_functional,
                     require_abundance=not taxonomy_only and not args.skip_abundance,
+                    require_screening=screening_requested,
                 )
             formatter.success("Tools and databases are ready")
 
@@ -780,8 +821,9 @@ def main():
                 'Gene abundance': (
                     'Skipped' if taxonomy_only or args.skip_abundance else 'BBMap + TPM'
                 ),
+                'Research screening': 'AMRFinderPlus + species targets' if screening_requested else 'Not requested',
                 'Memory mode': 'Low memory' if args.low_memory else 'Default',
-                'Threads': str(args.annotation_threads),
+                'Annotation threads': str(args.annotation_threads if args.annotation_threads is not None else check_config.annotation.threads),
                 'Output': args.output,
             })
 
@@ -836,15 +878,18 @@ def main():
         # COMMAND: COMPARE
         # ====================================================================
         elif args.command == 'compare':
+            from .core.comparison import run_comparison
+
             formatter.section_header("COMPARATIVE ANALYSIS")
-            formatter.error(
-                "Comparative analysis is not available in the stable runtime",
-                solutions=[
-                    "Run taxonomy and functional analysis for each sample first",
-                    "Comparative analysis will return after its methods are validated",
-                ],
+            summary_path = run_comparison(
+                args.sample_sheet, Path(args.output), feature=args.feature,
+                group_column=args.group_column, test=args.test,
+                reference_group=args.reference_group, pseudocount=args.pseudocount,
+                fdr_method=args.fdr_method, alpha=args.alpha, min_prevalence=args.min_prevalence,
             )
-            sys.exit(1)
+            formatter.success(f"Comparison completed in {formatter._format_time(time.monotonic() - start_time)}")
+            formatter.info(f"Summary → {summary_path}")
+            formatter.info(f"HTML report → {summary_path.parent / 'report.html'}")
 
         # ====================================================================
         # COMMAND: SETUP-DB
@@ -892,7 +937,7 @@ def main():
                 force=args.force,
                 notify=formatter.info,
             )
-            elapsed = time.time() - start_time
+            elapsed = time.monotonic() - start_time
             formatter.success(
                 f"Database setup completed in {formatter._format_time(elapsed)}"
             )
@@ -936,7 +981,7 @@ def main():
                 "Ensure sufficient disk space and memory",
                 "Report issue at GitHub if problem persists"
             ],
-            doc_link="https://github.com/Karudhoru/MetaQuest--A-Metagenomics-Analyzer/issues"
+            doc_link="https://github.com/dpatel511/metaquest/issues"
         )
         sys.exit(1)
 

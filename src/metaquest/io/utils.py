@@ -31,6 +31,7 @@ def run_system_check(
     require_interleaved: bool = False,
     require_functional: bool = False,
     require_abundance: bool = False,
+    require_screening: bool = False,
 ):
     """
     Runs a comprehensive check of all dependencies using the formatter for output.
@@ -51,9 +52,12 @@ def run_system_check(
         tools['bbmap.sh'] = '--version'
     if require_interleaved:
         tools['reformat.sh'] = None
+    if require_screening:
+        tools['amrfinder'] = '--version'
     for tool, cmd in tools.items():
         if not _check_command(tool, cmd):
-            package = "eggnog-mapper" if tool == "emapper.py" else tool
+            package = {"emapper.py": "eggnog-mapper", "amrfinder": "ncbi-amrfinderplus",
+                       "bbmap.sh": "bbmap", "reformat.sh": "bbmap"}.get(tool, tool)
             errors.append(f"Tool not found: '{tool}'. Please install it, e.g., via 'conda install -c bioconda {package}'.")
 
     # Python Packages
@@ -96,6 +100,15 @@ def run_system_check(
                 f"'metaquest databases --db-dir {config.databases.base_dir} "
                 f"--database {database}'."
             )
+    if require_screening:
+        from metaquest.core.screening import ScreeningError, resolve_amr_database
+
+        if config.classification.taxonomic_level != "S":
+            errors.append("Research screening requires classification.taxonomic_level: S.")
+        try:
+            resolve_amr_database(config.screening.database_dir or config.databases.base_dir / "amr")
+        except ScreeningError as exc:
+            errors.append(str(exc) + ". Run 'metaquest databases --database amr' with the same --db-dir.")
 
     # Final Report
     if warnings:

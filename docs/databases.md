@@ -9,7 +9,7 @@ database release used by an analysis.
 |---|---|---:|---:|---:|---|
 | `taxonomy` | Kraken2 Standard-8 with Bracken | 2026-06-26 | ~5.5 GB | ~7.5–8.1 GB | available |
 | `functional` | eggNOG-mapper core data | 5.0.2 | ~11.3 GB | ~53 GB | available |
-| `amr` | AMRFinderPlus candidate | — | — | — | planned |
+| `amr` | NCBI AMRFinderPlus | tool-compatible release | varies | varies | available |
 | `virulence` | VFDB Set A candidate | — | — | — | planned |
 
 The taxonomy archive comes from the official Kraken2 index catalog:
@@ -31,7 +31,7 @@ Example:
 ~~~text
 taxonomy: installed | 2026-06-26 | 5.5 GB download / 7.5 GB installed
 functional: available | 5.0.2 | 11.3 GB download / 53 GB installed
-amr: planned | pending | not finalized
+amr: available | tool-compatible release | upstream release size
 virulence: planned | pending | not finalized
 ~~~
 
@@ -77,6 +77,25 @@ after a failure and removed only after a successful install.
 
 This checkpoint makes eggNOG 5.0.2 installation reproducible. The full pipeline
 uses these files immediately after Pyrodigal gene prediction.
+
+## Install screening data
+
+Install the external executable from the repository environment, then use
+MetaQuest's database command:
+
+~~~bash
+conda install -c conda-forge -c bioconda 'ncbi-amrfinderplus>=4.2.7,<5'
+metaquest databases --db-dir /data/metaquest-db --database amr
+metaquest check --db-dir /data/metaquest-db --screen-pathogens
+~~~
+
+MetaQuest invokes NCBI's native updater to download and index a compatible
+release. It validates the staged database with AMRFinderPlus, records its actual
+version and core-file SHA-256 hashes, then publishes `ROOT/amr/` atomically.
+Its `latest` link selects the installed version. Reuse that installation across
+all samples in a study. `--force` updates it deliberately; compatible releases
+can change upstream, so a new installation is not a historical version pin.
+The updater needs network access and at least 2 GiB of working space.
 
 ## Directory layout
 
@@ -126,6 +145,9 @@ MetaQuest resolves the root in this order:
 4. `./databases`.
 
 The taxonomy index defaults to `ROOT/taxonomy`.
+Pass the root to `--db-dir`, for example `databases/`, rather than
+`databases/taxonomy/`. Passing the installed taxonomy/functional subdirectory
+now produces a targeted error instead of appending a second subdirectory.
 
 ## External disk with a repository-local path
 
@@ -139,7 +161,8 @@ The repository ignores `/databases`, including this symlink.
 
 ## Updating a release
 
-Database releases are pinned in source so analyses remain reproducible.
+Taxonomy and functional database releases are pinned in source. AMRFinderPlus
+uses its native compatible-release updater and records the installed release.
 Changing a release requires:
 
 - updating the catalog entry and expected size;
