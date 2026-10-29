@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Route terminal diagnostics, validation errors, debug output and animation to
+  stderr; retain help/version on stdout and fatal validation details under `--quiet`.
+- Reject invalid validation thresholds and annotation thread counts before output
+  creation; add subprocess CLI regressions exercised against source and wheels.
+- Record the post-beta development checkpoints and clarify that TestPyPI is optional.
+
 ## [2.0.0b1] — 2026-10-28
 
 Research beta prepared for publication. Screening and formal comparisons remain

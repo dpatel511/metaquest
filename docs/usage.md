@@ -24,6 +24,11 @@ metaquest databases --no-color --list
 | `--no-color` | disable ANSI colors and animation |
 | `--low-memory` | use Kraken2 database memory mapping |
 
+Help and version output use stdout. Terminal status, summaries, progress,
+warnings and errors use stderr; redirect them with `2>metaquest.stderr.log`.
+`--quiet` suppresses progress while preserving fatal errors. Colour and animation
+follow stderr's terminal status, and `--no-color` disables both explicitly.
+
 ## Check
 
 ~~~bash
@@ -52,6 +57,10 @@ Optional thresholds:
 --overrep-threshold FRACTION
 --strict-validation
 ~~~
+
+`--min-quality` must be nonnegative, `--min-sequences` must be at least 1,
+and `--overrep-threshold` must be a finite fraction in `[0, 1]`.
+An explicit `--annotation-threads` value on `run` must be at least 1.
 
 FASTQ structure is checked across the complete input. Quality statistics are
 sampled. Low mean quality, low Q30 content, adapters, and overrepresented

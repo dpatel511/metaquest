@@ -78,3 +78,6 @@ scratch/
 
 # ── ML Training Data ─────────────────────────────────────────────────────────
 training_data/
+
+# Local agent instructions
+/AGENTS.md

@@ -39,7 +39,7 @@ class Spinner:
         self.thread = None
         self.frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
         self._frame_idx = 0  # Changed to private
-        self._stdout = sys.stdout
+        self._stream = sys.stderr
     
     @property
     def spinning(self):
@@ -57,14 +57,14 @@ class Spinner:
         """Spinner animation loop with thread-safe access"""
         while self.spinning:  # Now uses thread-safe property
             try:
-                if self._stdout and not self._stdout.closed:
+                if self._stream and not self._stream.closed:
                     # Protect frame_idx from concurrent access
                     with self._lock:
                         frame = self.frames[self._frame_idx % len(self.frames)]
                         self._frame_idx += 1
                     
-                    self._stdout.write(f'\r  {Colors.CYAN}[{frame}]{Colors.END} {self.message}...')
-                    self._stdout.flush()
+                    self._stream.write(f'\r  {Colors.CYAN}[{frame}]{Colors.END} {self.message}...')
+                    self._stream.flush()
                 else:
                     break
             except (ValueError, AttributeError, OSError):
@@ -73,7 +73,7 @@ class Spinner:
     
     def start(self):
         """Start the spinner"""
-        if not self._stdout or self._stdout.closed:
+        if not self._stream or self._stream.closed:
             return
             
         self.spinning = True  # Uses thread-safe setter
@@ -93,13 +93,13 @@ class Spinner:
         
         # Clear the spinner line with exclusive access
         try:
-            if self._stdout and not self._stdout.closed:
+            if self._stream and not self._stream.closed:
                 with self._lock:  # Ensure no concurrent writes
                     if final_message:
-                        self._stdout.write(f'\r  {final_message}\n')
+                        self._stream.write(f'\r  {final_message}\n')
                     else:
-                        self._stdout.write('\r' + ' ' * (len(self.message) + 20) + '\r')
-                    self._stdout.flush()
+                        self._stream.write('\r' + ' ' * (len(self.message) + 20) + '\r')
+                    self._stream.flush()
         except (ValueError, AttributeError, OSError):
             pass
 
@@ -194,7 +194,7 @@ class OutputFormatter:
             'debug': self.DEBUG
         }
         self.verbosity = self.verbosity_map.get(verbosity, self.STANDARD)
-        self.colors_enabled = sys.stdout.isatty()
+        self.colors_enabled = sys.stderr.isatty()
         self.log_file = log_file
         self.start_time = time.time()
         self._active_spinner = None  # Track current spinner for debug output pausing
@@ -230,7 +230,7 @@ class OutputFormatter:
     def _print(self, message: str, min_verbosity: int = STANDARD):
         """Internal print with verbosity check"""
         if self.verbosity >= min_verbosity:
-            print(message)
+            print(message, file=sys.stderr)
         self._log(message)
 
     # ========================================================================
@@ -302,7 +302,7 @@ class OutputFormatter:
                     f"\n     {Colors.CYAN}📚 Documentation:{Colors.END} {doc_link}",
                     min_verbosity=self.SILENT,
                 )
-            print()
+            print(file=sys.stderr)
 
     # ========================================================================
     # PROGRESS TRACKING
@@ -470,7 +470,7 @@ class OutputFormatter:
         stripped = line.rstrip()
         # Print to terminal only — clean, indented, dim
         if self.verbosity >= self.DEBUG:
-            print(f"  {Colors.DIM}│ {stripped}{Colors.END}")
+            print(f"  {Colors.DIM}│ {stripped}{Colors.END}", file=sys.stderr)
         # Always log with timestamp (separate from terminal print)
         self._log(f"[{tag}] {stripped}")
 
@@ -483,17 +483,17 @@ class OutputFormatter:
                 if self._active_spinner.thread:
                     self._active_spinner.thread.join(timeout=0.3)
                 # Clear the spinner line
-                sys.stdout.write('\r\033[K')
-                sys.stdout.flush()
+                sys.stderr.write('\r\033[K')
+                sys.stderr.flush()
             label = f" {tag}: {operation_name} "
             bar = "─" * max(0, (73 - len(label)) // 2)
-            print(f"\n  {Colors.DIM}{bar}{label}{bar}{Colors.END}")
+            print(f"\n  {Colors.DIM}{bar}{label}{bar}{Colors.END}", file=sys.stderr)
         self._log(f"[{tag}:{operation_name}] --- begin ---")
 
     def _debug_block_footer(self, operation_name: str, tag: str):
         """Print a clean visual block footer for tool output in debug mode."""
         if self.verbosity >= self.DEBUG:
-            print(f"  {Colors.DIM}{'─' * 73}{Colors.END}\n")
+            print(f"  {Colors.DIM}{'─' * 73}{Colors.END}\n", file=sys.stderr)
         self._log(f"[{tag}:{operation_name}] --- end ---")
 
     def result(self, metrics: Dict[str, Any], indent: int = 1):

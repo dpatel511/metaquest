@@ -219,7 +219,7 @@ def handle_validation(file_paths, args, formatter):
 
     args.validation_results = reports
     args.validation_status = "passed" if all_valid else "failed"
-    print()  # Add spacing
+    formatter._print("")
     
     if total_files > 1:
         formatter.info(f"Validation Summary: {total_files} file(s) processed")
@@ -659,6 +659,16 @@ def main():
     
     parser = create_parser()
     args = parser.parse_args(_normalize_global_options(sys.argv[1:]))
+    if args.command in ('run', 'validate'):
+        if args.min_quality < 0:
+            parser.error('--min-quality must be >= 0')
+        if args.min_sequences < 1:
+            parser.error('--min-sequences must be >= 1')
+        if not 0 <= args.overrep_threshold <= 1:
+            parser.error('--overrep-threshold must be a finite fraction in [0, 1]')
+    if args.command == 'run' and args.annotation_threads is not None:
+        if args.annotation_threads < 1:
+            parser.error('--annotation-threads must be >= 1')
     _prepare_output_directory(args, parser)
     
     # Determine verbosity level from command-line flags
