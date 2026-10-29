@@ -86,7 +86,7 @@ class FileValidator:
             fmt._print("\u2514" + _h + "\u2518")
             fmt._print("\n\U0001f6d1 CRITICAL ISSUES DETECTED:")
             for msg in error_messages:
-                fmt._print(f"     \u2022 {msg}")
+                fmt.error(msg)
             fmt._print("\n\U0001f4a1 RECOMMENDATIONS:")
             self._print_recommendations(stats, error_messages)
             fmt._print("\n" + _h73 + "\n")
@@ -399,16 +399,15 @@ class FileValidator:
     
     def _check_file_exists(self, filepath):
         """Check file existence"""
-        from .output_formatter import Colors
+        from .output_formatter import get_formatter
         if not Path(filepath).exists():
-            print(f"\n     {Colors.RED}❌ ERROR: File not found{Colors.END}")
-            print(f"        Path: {filepath}")
+            get_formatter().error(f"File not found: {filepath}")
             return False
         return True
     
     def _validate_format(self, filepath, expected_type):
         """Validate every FASTQ record, not only the sampled QC prefix."""
-        from .output_formatter import Colors
+        from .output_formatter import get_formatter
         try:
             opener = gzip.open if str(filepath).endswith('.gz') else open
             with opener(filepath, 'rt') as handle:
@@ -418,9 +417,8 @@ class FileValidator:
             return True
             
         except StopIteration:
-            print(f"\n     {Colors.RED}❌ ERROR: File is empty{Colors.END}")
+            get_formatter().error("File is empty")
             return False
         except Exception as e:
-            print(f"\n     {Colors.RED}❌ ERROR: Invalid FASTQ format{Colors.END}")
-            print(f"        Details: {str(e)}")
+            get_formatter().error(f"Invalid FASTQ format: {e}")
             return False

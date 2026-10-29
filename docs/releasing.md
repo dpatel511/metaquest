@@ -5,23 +5,29 @@ and PyPI Trusted Publishing. No long-lived PyPI API token is stored in GitHub.
 
 ## One-time repository configuration
 
-1. In GitHub, create environments named `testpypi` and `pypi`.
-2. Require a maintainer approval for both environments. Restrict `pypi` to
+1. Reuse the existing production `pypi` environment and Trusted Publisher.
+   If an optional TestPyPI rehearsal is wanted, also configure `testpypi`.
+2. Require a maintainer approval for publishing environments. Restrict `pypi` to
    protected tags matching `v*` if the repository plan exposes that control.
 3. Protect `main` and require these CI checks before merging:
    `Python 3.10`, `Python 3.11`, `Python 3.12`,
    `Direct dependency licenses`, `Build distributions`, and
    `Conda integration (Python 3.11)`.
-4. On TestPyPI, configure a trusted publisher for:
+4. For an optional rehearsal, configure a TestPyPI trusted publisher for:
    - owner: `dpatel511`
    - repository: `metaquest`
    - workflow: `testpypi.yml`
    - environment: `testpypi`
-5. On PyPI, configure a trusted publisher for the same owner and repository,
-   using workflow `release.yml` and environment `pypi`. A pending publisher can
-   reserve the project name for its first upload.
+5. The production PyPI Trusted Publisher uses the same owner and repository,
+   workflow `release.yml` and environment `pypi`. Verify this existing configuration
+   before changing it; a separate TestPyPI account is not required for production.
 
-## TestPyPI rehearsal
+## Optional TestPyPI rehearsal
+
+This is an additional packaging check, not a prerequisite for an established
+production Trusted Publishing route. It requires its own TestPyPI account-side
+publisher setup. If omitted, verify the built wheel in isolation before release
+and download/install the exact public PyPI artifacts after publication.
 
 First run CI on the exact commit to be uploaded and wait for all six required
 checks to pass. Both publishing workflows refuse to build for publication if
@@ -58,6 +64,7 @@ The `2.0.0b1` scope is frozen around FASTQ validation/preprocessing, taxonomy,
 assembly, gene prediction, annotation, abundance, reporting and the documented
 optional research screening/comparison modes. During beta prioritize fixes,
 installation reliability, documentation and independent validation.
+Track post-beta evidence against the [development checkpoints](development-checkpoints.md).
 
 Before publishing:
 
@@ -71,8 +78,9 @@ Before publishing:
 - Inspect the native-integration artifact for its JUnit results and database
   manifest. The AMRFinderPlus cache key includes the actual tool version; increment
   its cache revision deliberately when refreshing the selected compatible data.
-- Finish the clean TestPyPI package rehearsal and acceptance checks for read modes,
-  skip/resume, missing-data errors and zero-hit reporting.
+- Finish isolated-wheel verification and acceptance checks for read modes,
+  skip/resume, missing-data errors and zero-hit reporting. TestPyPI can provide
+  an additional optional packaging rehearsal.
 - Review report rendering on desktop/narrow screens and in print. Automated
   link/image checks and inspected PNGs do not prove browser layout correctness.
 - Describe screening as a 16-species bacterial target subset plus selected curated
