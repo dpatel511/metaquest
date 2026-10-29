@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Preserve database installations across failed/interrupted promotion, recover
+  durable replacement backups, validate manifests and discard corrupt functional
+  archives so retries can download them again.
+- Bound HTTP operations and verify range bodies/completed partial downloads.
+- Record interrupted attempts, check database/tool identity and essential output
+  hashes before resume, and invalidate downstream caches after damaged stages.
+- Terminate native process groups on SIGINT/SIGTERM and return exit 130/143;
+  document recovery guarantees and the observed native MEGAHIT ordering variation.
+
 - Route terminal diagnostics, validation errors, debug output and animation to
   stderr; retain help/version on stdout and fatal validation details under `--quiet`.
 - Reject invalid validation thresholds and annotation thread counts before output

@@ -80,6 +80,7 @@ def run_functional_annotation_stage(ctx: PipelineContext) -> PipelineContext:
             tax_scope=config.tax_scope,
             expected_version=config.eggnog_version,
             database_release=config.eggnog_database_release,
+            reuse=ctx.resume,
         )
     except AnnotationError:
         raise

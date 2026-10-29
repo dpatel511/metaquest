@@ -88,6 +88,20 @@ Pass criteria:
 
 ## 2. Failure recovery and reproducibility
 
+Implementation and observed recovery behaviour are documented in
+[download and run recovery](recovery.md). The audit retains the failed initial
+MEGAHIT byte comparison: all sequence content matched, while ordering/headers
+differed. SIGKILL/power-loss cleanup and concurrent writers are explicitly outside
+the handled-signal guarantees.
+
+Local verification on 2026-10-29 added 34 recovery/process cases. The complete
+source and independently installed-wheel suites each passed 173 tests with no
+skips or warnings, including the existing native controls. Lint, strict wheel
+metadata, dependency consistency and license checks passed; 40 packaged source,
+config and catalog files matched the checkout. Remote CI and publication remain
+pending for this checkpoint branch. Evidence is retained under ignored
+`test_results/recovery-check/`.
+
 Verification: use disposable output/database directories to exercise interrupted
 downloads, truncated archives, insufficient space and interrupted stages.
 Compare a resumed run to an uninterrupted run using the same input hashes,

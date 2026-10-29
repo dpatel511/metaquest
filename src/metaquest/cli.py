@@ -10,6 +10,7 @@ Author: MetaQuest Development Team
 
 import argparse
 import json
+import signal
 import sys
 import time
 from datetime import datetime
@@ -18,6 +19,7 @@ from textwrap import dedent
 from .exceptions import MetaQuestError
 from .io.output_formatter import Colors, OutputFormatter, set_formatter
 from .config import __version__
+from .io.processes import TerminationRequested, handle_sigterm
 
 # ============================================================================
 # APP METADATA
@@ -701,6 +703,7 @@ def main():
 
     start_time = time.monotonic()
 
+    previous_sigterm = signal.signal(signal.SIGTERM, handle_sigterm)
     try:
         # ====================================================================
         # COMMAND: CHECK
@@ -970,9 +973,10 @@ def main():
             formatter.info("Edit this file to customize pipeline behavior.")
             formatter.info("Usage: metaquest run --config metaquest.yaml --single reads.fq -o results/")
 
-    except KeyboardInterrupt:
-        formatter.warning("Operation interrupted by user (Ctrl+C)")
-        sys.exit(130)
+    except KeyboardInterrupt as exc:
+        terminated = isinstance(exc, TerminationRequested)
+        formatter.warning("Operation terminated (SIGTERM)" if terminated else "Operation interrupted by user (Ctrl+C)")
+        sys.exit(143 if terminated else 130)
 
     except MetaQuestError as e:
         formatter.error(str(e))
@@ -994,6 +998,8 @@ def main():
             doc_link="https://github.com/dpatel511/metaquest/issues"
         )
         sys.exit(1)
+    finally:
+        signal.signal(signal.SIGTERM, previous_sigterm)
 
 
 if __name__ == "__main__":

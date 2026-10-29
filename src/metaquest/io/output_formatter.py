@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
 from typing import Optional, Dict, List, Any, Tuple
+from .processes import run_command
 
 class Colors:
     """ANSI color codes for terminal output"""
@@ -339,7 +340,7 @@ class OutputFormatter:
         if capture_output:
             if self.verbosity >= self.DEBUG:
                 # DEBUG mode: capture output, print through structured block (no raw sys.stderr writes)
-                process = subprocess.Popen(
+                result = run_command(
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -348,26 +349,9 @@ class OutputFormatter:
                     encoding='utf-8',
                     errors='replace'
                 )
-                
-                stdout_lines = []
-                stderr_lines = []
-                
-                def read_debug_stream(stream, line_list, tag):
-                    """Collect lines without writing to sys.stderr/stdout directly."""
-                    for line in stream:
-                        line_list.append(line)
-                
-                t1 = threading.Thread(target=read_debug_stream, args=(process.stdout, stdout_lines, "STDOUT"), daemon=True)
-                t2 = threading.Thread(target=read_debug_stream, args=(process.stderr, stderr_lines, "STDERR"), daemon=True)
-                t1.start()
-                t2.start()
-                
-                return_code = process.wait()
-                t1.join(timeout=2)
-                t2.join(timeout=2)
-                
-                stdout_str = "".join(stdout_lines)
-                stderr_str = "".join(stderr_lines)
+                return_code = result.returncode
+                stdout_str = result.stdout
+                stderr_str = result.stderr
                 
                 # Print structured block for STDOUT, then STDERR
                 if stdout_str.strip():
@@ -398,7 +382,7 @@ class OutputFormatter:
                 return return_code, stdout_str, stderr_str
             else:
                 # Non-debug: fully suppress terminal output, log everything
-                result = subprocess.run(cmd, stdout=subprocess.PIPE,
+                result = run_command(cmd, stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE, text=True, encoding='utf-8')
                 if result.stdout:
                     self._log(f"[STDOUT:{operation_name}] --- begin ---")
@@ -413,7 +397,7 @@ class OutputFormatter:
                 return result.returncode, result.stdout, result.stderr
         else:
             # capture_output=False: always capture so we can log/display cleanly
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            result = run_command(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     text=True, encoding='utf-8', errors='replace')
             stdout_str = result.stdout or ""
             stderr_str = result.stderr or ""

@@ -60,6 +60,61 @@ def _read_json(path: Path) -> dict:
         return {}
 
 
+def _database_identity(config, *, taxonomy_only=False, skip_functional=False):
+    """Fingerprint manifests and index metadata without rereading multi-GB indexes."""
+    databases = {"taxonomy": (config.databases.kraken_db,
+                              ["hash.k2d", "opts.k2d", "taxo.k2d"])}
+    if not taxonomy_only and not skip_functional:
+        databases["functional"] = (config.databases.functional_dir,
+                                   ["eggnog.db", "eggnog.taxa.db", "eggnog_proteins.dmnd"])
+    if config.screening.enabled:
+        from metaquest.core.screening import AMR_FILES, resolve_amr_database
+        root = config.screening.database_dir or config.databases.base_dir / "amr"
+        databases["amr"] = (resolve_amr_database(root), list(AMR_FILES))
+    identities = {}
+    for name, (directory, names) in databases.items():
+        if name == "taxonomy":
+            names = names + [path.name for path in sorted(directory.glob("database*mers.kmer_distrib"))]
+        manifest = directory / "metaquest-db.json"
+        if name == "amr" and not manifest.is_file():
+            manifest = directory.parent / "metaquest-db.json"
+        identities[name] = {
+            "path": str(directory.resolve()),
+            "manifest_sha256": _sha256(manifest) if manifest.is_file() else None,
+            "files": {item: {"size": (directory / item).stat().st_size,
+                             "mtime_ns": (directory / item).stat().st_mtime_ns}
+                      if (directory / item).is_file() else None for item in names},
+        }
+    return identities
+
+
+def _stage_output_hashes(ctx, name):
+    files = {
+        "Taxonomic Classification": ["kraken_report.txt", "bracken_report.tsv"],
+        "Metagenomic Assembly": ["megahit_assembly/final.contigs.fa"],
+        "Gene Prediction": ["gene_prediction/" + item for item in (
+            "genes.faa", "genes.fna", "genes.gff3", "contigs.stable.fasta", "contig_id_map.tsv", "summary.json")],
+        "Functional Annotation": ["functional_annotation/" + item for item in (
+            "metaquest.emapper.annotations", "functional_annotations.tsv",
+            "functional_category_summary.tsv", "completion.json", "summary.json")],
+        "Gene Abundance": ["gene_abundance/" + item for item in (
+            "gene_abundance.tsv", "completion.json", "summary.json")],
+    }
+    if ctx.config.preprocessing.enabled:
+        files["Read Preprocessing"] = ["preprocessing/fastp.json", "preprocessing/fastp.html",
+                                       "preprocessing/cleaned_R1.fastq.gz"]
+        if ctx.read_mode != "single":
+            files["Read Preprocessing"].append("preprocessing/cleaned_R2.fastq.gz")
+    if not ctx.skip_functional:
+        files["Gene Abundance"].append("gene_abundance/functional_abundance.tsv")
+    if ctx.read_mode == "interleaved" and not ctx.config.preprocessing.enabled:
+        files["Taxonomic Classification"].extend(["split_R1.fastq.gz", "split_R2.fastq.gz"])
+    try:
+        return {relative: _sha256(ctx.output_dir / relative) for relative in files.get(name, [])}
+    except OSError:
+        return None
+
+
 class PipelineRunner:
     """
     Runs the MetaQuest analysis pipeline as a sequence of stages.
@@ -88,6 +143,8 @@ class PipelineRunner:
 
         attempt_started = datetime.now().isoformat()
         history = []
+        previous = {}
+        resume_requested = ctx.resume
         if ctx.resume:
             previous = _read_json(ctx.output_dir / "analysis_metadata.json")
             history = list(previous.get("attempt_history", []))
@@ -120,6 +177,9 @@ class PipelineRunner:
             "status": "running",
             "stage_timings_seconds": {},
         }
+        if history and history[-1].get("status") == "running":
+            history[-1].update(status="interrupted", finished_at=attempt_started,
+                               failure_reason="Previous attempt ended without completion")
         history.append(current_attempt)
         ctx.metadata.update(
             {
@@ -130,18 +190,36 @@ class PipelineRunner:
                 "original_stage_timings_seconds": original_timings,
                 "attempt_history": history,
                 "stage_timings_seconds": original_timings,
+                "database_identity": _database_identity(
+                    ctx.config, taxonomy_only=ctx.skip_annotation, skip_functional=ctx.skip_functional),
+                "stage_output_hashes": {},
             }
         )
         self._save_metadata(ctx)
 
+        reuse_downstream = resume_requested
         for i, (name, stage_fn) in enumerate(self._stages, 1):
             logger.info("[%d/%d] %s", i, total, name)
             formatter.info(f"[{i}/{total}] {name}")
             started = time.monotonic()
+            expected = previous.get("stage_output_hashes", {}).get(name)
+            reuse_downstream = bool(
+                reuse_downstream and name in previous.get("completed_stages", [])
+                and expected is not None and expected == _stage_output_hashes(ctx, name)
+            )
             try:
                 with formatter.spinner(name):
-                    ctx = stage_fn(ctx)
+                    ctx.resume = reuse_downstream
+                    try:
+                        ctx = stage_fn(ctx)
+                    finally:
+                        ctx.resume = resume_requested
                 ctx.completed_stages.append(name)
+                hashes = _stage_output_hashes(ctx, name)
+                if hashes is not None:
+                    ctx.metadata["stage_output_hashes"][name] = hashes
+                if hashes != expected:
+                    reuse_downstream = False
                 elapsed = time.monotonic() - started
                 elapsed = round(elapsed, 3)
                 current_attempt["stage_timings_seconds"][name] = elapsed
@@ -156,6 +234,9 @@ class PipelineRunner:
                 formatter.success(
                     f"{name.ljust(28)} {formatter._format_time(elapsed)}"
                 )
+            except KeyboardInterrupt as exc:
+                self._record_failure(ctx, name, exc, status="interrupted")
+                raise
             except PipelineStageError as exc:
                 self._record_failure(ctx, name, exc)
                 raise
@@ -175,20 +256,20 @@ class PipelineRunner:
         logger.info("Pipeline complete: %d stage(s) finished", len(ctx.completed_stages))
         return ctx
 
-    def _record_failure(self, ctx: PipelineContext, stage: str, exc: Exception) -> None:
+    def _record_failure(self, ctx: PipelineContext, stage: str, exc: BaseException, *, status="failed") -> None:
         """Persist completed stages and failure provenance before propagating."""
         ctx.metadata.update(
             {
-                "status": "failed",
+                "status": status,
                 "failed_stage": stage,
-                "failure_reason": str(exc),
+                "failure_reason": str(exc) or type(exc).__name__,
             }
         )
         history = ctx.metadata.get("attempt_history", [])
         if history:
             history[-1].update(
                 {
-                    "status": "failed",
+                    "status": status,
                     "finished_at": datetime.now().isoformat(),
                     "failed_stage": stage,
                     "failure_reason": str(exc),

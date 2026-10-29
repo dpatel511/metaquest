@@ -65,7 +65,7 @@ def test_amr_install_validates_before_replacing_existing_database(tmp_path, monk
     def failing_update(command, **kwargs):
         return SimpleNamespace(returncode=1)
 
-    monkeypatch.setattr(database_manager.subprocess, "run", failing_update)
+    monkeypatch.setattr(database_manager, "run_command", failing_update)
     with pytest.raises(DatabaseSetupError, match="setup failed"):
         database_manager.install_database("amr", tmp_path, force=True)
     assert (target / "previous").read_text() == "preserve"
@@ -80,7 +80,7 @@ def test_amr_install_validates_before_replacing_existing_database(tmp_path, monk
             (staged / "latest").symlink_to("test-v1", target_is_directory=True)
         return SimpleNamespace(returncode=0, stdout="validated", stderr="")
 
-    monkeypatch.setattr(database_manager.subprocess, "run", successful_update)
+    monkeypatch.setattr(database_manager, "run_command", successful_update)
     installed = database_manager.install_database("amr", tmp_path, force=True)
     assert resolve_amr_database(installed).name == "test-v1"
     assert database_manager.is_installed("amr", tmp_path)
@@ -230,6 +230,7 @@ def test_eggnog_outputs_include_every_gene_and_are_restart_safe(tmp_path, monkey
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(functional_analysis.subprocess, "run", fake_run)
+    monkeypatch.setattr(functional_analysis, "run_command", fake_run)
 
     table, categories, annotated, reused = run_functional_annotation(
         proteins,
@@ -311,7 +312,7 @@ def test_download_continues_across_bounded_range_responses(tmp_path, monkeypatch
     )
     ranges = []
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, **_kwargs):
         ranges.append(request.get_header("Range"))
         return next(responses)
 
@@ -342,7 +343,7 @@ def test_download_retries_after_interrupted_response(tmp_path, monkeypatch):
     monkeypatch.setattr(
         database_manager.urllib.request,
         "urlopen",
-        lambda _request: next(responses),
+        lambda _request, **_kwargs: next(responses),
     )
 
     _download("https://example.test/database", destination, expected_bytes=6)
@@ -361,7 +362,7 @@ def test_download_rejects_invalid_resume_range(tmp_path, monkeypatch):
     monkeypatch.setattr(
         database_manager.urllib.request,
         "urlopen",
-        lambda _request: response,
+        lambda _request, **_kwargs: response,
     )
 
     with pytest.raises(DatabaseSetupError, match="invalid byte range"):
@@ -376,7 +377,7 @@ def test_download_rejects_oversized_partial_without_request(tmp_path, monkeypatc
     monkeypatch.setattr(
         database_manager.urllib.request,
         "urlopen",
-        lambda _request: pytest.fail("network request should not occur"),
+        lambda _request, **_kwargs: pytest.fail("network request should not occur"),
     )
 
     with pytest.raises(DatabaseSetupError, match="larger than expected"):
@@ -386,7 +387,7 @@ def test_download_rejects_oversized_partial_without_request(tmp_path, monkeypatc
 def test_download_stall_is_bounded_and_preserves_partial(tmp_path, monkeypatch):
     destination = tmp_path / "database.partial"
 
-    def fake_urlopen(_request):
+    def fake_urlopen(_request, **_kwargs):
         return _FakeResponse(
             b"",
             status=206,

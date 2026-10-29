@@ -85,6 +85,8 @@ small query. Larger, truth-labeled mock data are needed for biological validatio
 Repeat the exact command with `--resume`. Input hashes, effective settings and
 workflow flags must match. Check `analysis_metadata.json` attempt history and
 the logs for cache reuse. Then rerun `tools/verify_run.py`.
+See [download and run recovery](recovery.md) for integrity checks, legacy-output
+compatibility, signal exit codes and hard-termination limitations.
 
 Use fresh directories for additional checks:
 
