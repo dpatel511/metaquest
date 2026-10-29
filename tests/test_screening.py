@@ -86,6 +86,7 @@ def test_screening_resume_requires_content_and_database_match(tmp_path, monkeypa
         return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(screening.subprocess, "run", run)
+    monkeypatch.setattr(screening, "run_command", run)
     first = run_screening(proteins, gff, bracken, tmp_path, database, total_input=10, count_unit="fragments")
     assert first["protein_types"] == {"AMR": 1}
     assert first["screened_genes"] == 2

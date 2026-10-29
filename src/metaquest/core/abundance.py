@@ -20,6 +20,7 @@ from bisect import bisect_right
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from metaquest.io.processes import managed_process
 from typing import Iterable, Iterator
 
 from ..exceptions import AnnotationError
@@ -385,15 +386,11 @@ def _stream_bbmap(command: list[str], log_path: Path, cwd: Path) -> Iterator[str
     with log_path.open("w", encoding="utf-8") as log:
         log.write("[MetaQuest] " + " ".join(command) + "\n")
         log.flush()
-        process = subprocess.Popen(
+        with managed_process(
             command, stdout=subprocess.PIPE, stderr=log, text=True, cwd=cwd, bufsize=1 << 20
-        )
-        try:
+        ) as process:
             assert process.stdout is not None
             yield from process.stdout
-        finally:
-            if process.stdout:
-                process.stdout.close()
             returncode = process.wait()
     if returncode:
         tail = "\n".join(log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-20:])

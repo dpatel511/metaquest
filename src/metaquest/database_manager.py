@@ -9,17 +9,18 @@ import json
 import re
 import shutil
 import sqlite3
-import subprocess
 import tarfile
 import tempfile
 import urllib.error
 import urllib.request
+import zlib
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 from metaquest.exceptions import MetaQuestError
+from metaquest.io.processes import run_command
 
 
 class DatabaseSetupError(MetaQuestError):
@@ -131,8 +132,16 @@ def is_installed(key: str, db_root: Path) -> bool:
     manifest = target / "metaquest-db.json"
     if not manifest.exists():
         return False
+    try:
+        recorded = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if (not isinstance(recorded, dict) or recorded.get("key") != key
+            or not isinstance(recorded.get("release"), str) or not recorded["release"].strip()):
+        return False
     if key == "taxonomy":
-        return all((target / name).exists() for name in ("hash.k2d", "opts.k2d", "taxo.k2d"))
+        return all((target / name).is_file() and (target / name).stat().st_size > 0
+                   for name in ("hash.k2d", "opts.k2d", "taxo.k2d"))
     if key == "functional":
         return all(
             (target / name).is_file() and (target / name).stat().st_size > 0
@@ -181,8 +190,9 @@ def _download(
             headers={"Range": f"bytes={existing}-{range_end}"} if existing else {},
         )
         before_request = existing
+        range_limit = None
         try:
-            response = urllib.request.urlopen(request)
+            response = urllib.request.urlopen(request, timeout=30)
             status = getattr(response, "status", 200) or 200
             if status == 206:
                 content_range = response.headers.get("Content-Range", "")
@@ -207,6 +217,7 @@ def _download(
                         f"expected {target_size} bytes, got {total}"
                     )
                 mode = "ab"
+                range_limit = end - start + 1
             elif existing:
                 response.close()
                 raise DatabaseSetupError(
@@ -227,6 +238,15 @@ def _download(
             with response, destination.open(mode) as output:
                 shutil.copyfileobj(response, output, length=1024 * 1024)
             last_error = None
+        except urllib.error.HTTPError as exc:
+            complete = re.fullmatch(r"bytes \*/(\d+)", exc.headers.get("Content-Range", ""))
+            exc.close()
+            if exc.code == 416 and complete and int(complete.group(1)) == existing:
+                if target_size is None or target_size == existing:
+                    return
+            if 400 <= exc.code < 500 and exc.code not in (408, 429):
+                raise DatabaseSetupError(f"HTTP {exc.code} downloading {destination.name}") from exc
+            last_error = exc
         except (
             ConnectionError,
             TimeoutError,
@@ -236,6 +256,10 @@ def _download(
             last_error = exc
 
         observed = destination.stat().st_size if destination.exists() else 0
+        if range_limit is not None and observed - before_request > range_limit:
+            with destination.open("r+b") as output:
+                output.truncate(before_request)
+            raise DatabaseSetupError(f"Response body exceeds advertised byte range for {destination.name}")
         if target_size is not None and observed > target_size:
             raise DatabaseSetupError(
                 f"Downloaded more data than expected for {destination.name}: "
@@ -292,7 +316,8 @@ def _safe_extract(archive: Path, destination: Path) -> None:
         for member in bundle.getmembers():
             member_path = (destination / member.name).resolve()
             if (
-                member.issym()
+                not (member.isfile() or member.isdir())
+                or member.issym()
                 or member.islnk()
                 or destination_resolved not in member_path.parents
             ):
@@ -300,6 +325,23 @@ def _safe_extract(archive: Path, destination: Path) -> None:
                     f"Unsafe path in database archive: {member.name}"
                 )
         bundle.extractall(destination)
+
+
+def _promote_database(staged: Path, target: Path) -> None:
+    """Retain the previous installation until promotion succeeds, including Ctrl+C."""
+    previous = target.with_name(f".{target.name}.previous")
+    if previous.exists():
+        raise DatabaseSetupError(f"Unresolved database backup: {previous}")
+    try:
+        if target.exists():
+            target.replace(previous)
+        staged.replace(target)
+    except BaseException:
+        if previous.exists() and not target.exists():
+            previous.replace(target)
+        raise
+    if previous.exists():
+        shutil.rmtree(previous)
 
 
 def _validate_sqlite(path: Path) -> None:
@@ -330,7 +372,7 @@ def _validate_functional_tools(target: Path, release: str) -> None:
         ([emapper, "--data_dir", str(target), "--version"], "eggNOG-mapper"),
     )
     for command, name in commands:
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = run_command(command, capture_output=True, text=True)
         output = f"{result.stdout}\n{result.stderr}"
         if result.returncode or (name == "eggNOG-mapper" and release not in output):
             raise DatabaseSetupError(f"{name} could not validate the functional database")
@@ -348,7 +390,7 @@ def _extract_functional_artifact(
     try:
         with gzip.open(archive, "rb") as source, output.open("wb") as target:
             shutil.copyfileobj(source, target, length=1024 * 1024)
-    except (EOFError, OSError) as exc:
+    except (EOFError, gzip.BadGzipFile, zlib.error) as exc:
         raise DatabaseSetupError(f"Invalid gzip archive: {archive.name}") from exc
 
 
@@ -401,11 +443,12 @@ def _install_functional(
             archive_name = str(artifact["archive"])
             if notify:
                 notify(f"Extracting {archive_name}")
-            _extract_functional_artifact(
-                downloads / f"{archive_name}.partial",
-                extracted,
-                artifact,
-            )
+            partial = downloads / f"{archive_name}.partial"
+            try:
+                _extract_functional_artifact(partial, extracted, artifact)
+            except (DatabaseSetupError, tarfile.TarError, EOFError):
+                partial.unlink(missing_ok=True)
+                raise
 
         required = tuple(str(item["output"]) for item in FUNCTIONAL_ARTIFACTS)
         for name in required:
@@ -427,16 +470,7 @@ def _install_functional(
             encoding="utf-8",
         )
 
-        previous = None
-        if target.exists():
-            previous = Path(tmp) / "previous"
-            target.replace(previous)
-        try:
-            extracted.replace(target)
-        except Exception:
-            if previous is not None and previous.exists():
-                previous.replace(target)
-            raise
+        _promote_database(extracted, target)
 
     for artifact in FUNCTIONAL_ARTIFACTS:
         (downloads / f"{artifact['archive']}.partial").unlink()
@@ -468,12 +502,12 @@ def _install_amr(db_root: Path, target: Path, notify) -> Path:
         if notify:
             notify("Downloading and indexing the tool-compatible NCBI AMRFinderPlus database")
         with (staged / "setup.log").open("w", encoding="utf-8") as log:
-            result = subprocess.run([updater, "--database", str(staged)], stdout=log, stderr=log)
+            result = run_command([updater, "--database", str(staged)], stdout=log, stderr=log)
         if result.returncode:
             tail = (staged / "setup.log").read_text(errors="replace")[-4000:]
             raise DatabaseSetupError(f"AMRFinderPlus database setup failed: {tail}")
         database = resolve_amr_database(staged)
-        check = subprocess.run([tool, "--database", str(database), "--database_version"],
+        check = run_command([tool, "--database", str(database), "--database_version"],
                                capture_output=True, text=True)
         if check.returncode:
             raise DatabaseSetupError(f"AMRFinderPlus database validation failed: {check.stderr}")
@@ -484,15 +518,7 @@ def _install_amr(db_root: Path, target: Path, notify) -> Path:
             "sha256": {name: _sha256(database / name) for name in AMR_FILES},
         }
         (staged / "metaquest-db.json").write_text(json.dumps(manifest, indent=2) + "\n")
-        previous = Path(temporary) / "previous"
-        if target.exists():
-            target.replace(previous)
-        try:
-            staged.replace(target)
-        except Exception:
-            if previous.exists():
-                previous.replace(target)
-            raise
+        _promote_database(staged, target)
     return target
 
 
@@ -514,6 +540,14 @@ def install_database(
 
     db_root = Path(db_root).expanduser().resolve()
     target = db_root / key
+    previous = target.with_name(f".{target.name}.previous")
+    if previous.exists():
+        if not target.exists():
+            previous.replace(target)
+        elif is_installed(key, db_root):
+            shutil.rmtree(previous)
+        else:
+            raise DatabaseSetupError(f"Incomplete database replacement; previous installation retained at {previous}")
     if is_installed(key, db_root) and not force:
         if notify:
             notify(f"{spec.name} is already installed and valid")
@@ -588,7 +622,7 @@ def install_database(
             notify("Extracting database archive")
         _safe_extract(archive, extracted)
         required = ("hash.k2d", "opts.k2d", "taxo.k2d")
-        if not all((extracted / name).exists() for name in required):
+        if not all((extracted / name).is_file() and (extracted / name).stat().st_size for name in required):
             raise DatabaseSetupError(
                 f"{spec.name} archive is missing required Kraken2 index files"
             )
@@ -604,9 +638,7 @@ def install_database(
             encoding="utf-8",
         )
 
-        if target.exists():
-            shutil.rmtree(target)
-        extracted.replace(target)
+        _promote_database(extracted, target)
     archive.unlink(missing_ok=True)
     checksum_file.unlink(missing_ok=True)
     try:

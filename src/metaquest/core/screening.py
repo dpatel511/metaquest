@@ -12,6 +12,7 @@ import json
 import subprocess
 from collections import Counter
 from pathlib import Path
+from metaquest.io.processes import run_command
 
 from metaquest.core.abundance import _sha256, read_gene_gff
 from metaquest.exceptions import MetaQuestError
@@ -201,7 +202,7 @@ def run_screening(
         with (output / "amrfinder.log").open("w", encoding="utf-8") as log:
             log.write("[MetaQuest] " + " ".join(command) + "\n")
             log.flush()
-            process = subprocess.run(command, stdout=log, stderr=log)
+            process = run_command(command, stdout=log, stderr=log)
         if process.returncode:
             raise ScreeningError(f"AMRFinderPlus failed (exit {process.returncode}); see {output / 'amrfinder.log'}")
     else:

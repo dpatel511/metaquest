@@ -10,6 +10,7 @@ import threading
 import time
 from collections import Counter
 from pathlib import Path
+from metaquest.io.processes import run_command
 
 from Bio import SeqIO
 
@@ -262,6 +263,7 @@ def run_functional_annotation(
     tax_scope: str = "auto",
     expected_version: str = "2.1.15",
     database_release: str = "5.0.2",
+    reuse: bool = True,
 ) -> tuple[Path, Path, int, bool]:
     """Annotate every predicted protein with pinned eggNOG-mapper v2 data."""
     proteins_path = Path(proteins_path).resolve()
@@ -290,7 +292,7 @@ def run_functional_annotation(
         "evalue": evalue,
         "diamond_block_size": diamond_block_size,
     }
-    if completion_path.is_file() and raw_annotations.is_file() and summary_path.is_file():
+    if reuse and completion_path.is_file() and raw_annotations.is_file() and summary_path.is_file():
         existing = json.loads(completion_path.read_text(encoding="utf-8"))
         if all(existing.get(key) == value for key, value in expected_state.items()):
             table, categories, annotated, total = _write_functional_outputs(
@@ -308,6 +310,7 @@ def run_functional_annotation(
             summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
             return table, categories, annotated, True
 
+    completion_path.unlink(missing_ok=True)
     required_database_files = ("eggnog.db", "eggnog.taxa.db", "eggnog_proteins.dmnd")
     missing = [name for name in required_database_files if not (database_dir / name).is_file()]
     if missing:
@@ -386,7 +389,7 @@ def run_functional_annotation(
             heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
             heartbeat_thread.start()
             try:
-                result = subprocess.run(
+                result = run_command(
                     command,
                     stdout=log,
                     stderr=subprocess.STDOUT,

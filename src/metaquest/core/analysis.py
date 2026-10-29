@@ -12,7 +12,7 @@ from dataclasses import asdict, replace
 
 from ..exceptions import ConfigError
 from ..settings import get_config, load_config
-from ..pipeline.runner import build_default_pipeline
+from ..pipeline.runner import build_default_pipeline, _database_identity
 from ..pipeline.context import PipelineContext
 
 
@@ -38,7 +38,12 @@ def _jsonable(value):
 
 def _validate_resume(output_dir, input_files, config, workflow):
     metadata_path = output_dir / "analysis_metadata.json"
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ConfigError("--resume metadata is unreadable; retain the output and use a new directory") from exc
+    if not isinstance(metadata, dict):
+        raise ConfigError("--resume metadata must be a JSON object")
     recorded_inputs = metadata.get("input_files", [])
     current_inputs = [
         {
@@ -56,6 +61,19 @@ def _validate_resume(output_dir, input_files, config, workflow):
     for key, value in workflow.items():
         if recorded_workflow.get(key) != value:
             raise ConfigError(f"--resume workflow option does not match: {key}")
+    identity = _database_identity(config, taxonomy_only=workflow.get("taxonomy_only", False),
+                                  skip_functional=workflow.get("skip_functional", False))
+    if metadata.get("database_identity") != identity:
+        raise ConfigError("--resume database identity changed or was not recorded; use a new output directory")
+    from ..pipeline import runner
+    for tool, command in {
+        "fastp": ["fastp", "--version"], "kraken2": ["kraken2", "--version"],
+        "bracken": ["bracken", "-v"], "megahit": ["megahit", "--version"],
+    }.items():
+        recorded = metadata.get("tool_provenance", {}).get(tool)
+        if recorded not in (None, "not_run", "unknown", "unavailable"):
+            if runner._tool_version(command) != recorded:
+                raise ConfigError(f"--resume tool version changed: {tool}; use a new output directory")
 
 
 def run_analysis(input_file, output_dir, cli_args=None):
