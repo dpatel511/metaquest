@@ -1,6 +1,6 @@
 # Installation
 
-This guide covers the MetaQuest `2.0.0b1` research beta.
+This guide covers the MetaQuest `2.0.0b2` research beta.
 
 ## Supported environment
 
@@ -19,30 +19,29 @@ The distribution is named `metaquest-bio`; it installs the `metaquest` Python
 package and CLI command:
 
 ~~~bash
-python -m pip install --pre 'metaquest-bio==2.0.0b1'
+python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b2'
 metaquest --version
 ~~~
 
-Use that command after beta publication; until then install this checkout below.
 PyPI installs the Python layer only. The external bioinformatics tools listed
 below must be installed separately. The recommended complete environment is the
 repository's Conda environment.
 
 ## Install the complete Conda environment
 
-From the repository root:
+Use the environment files matching the package release:
 
 ~~~bash
+git clone --branch v2.0.0b2 https://github.com/dpatel511/metaquest.git
+cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
-python -m pip install -e .
+python -m pip install --no-deps 'metaquest-bio==2.0.0b2'
 ~~~
 
-For a regular non-editable installation:
-
-~~~bash
-python -m pip install .
-~~~
+`--no-deps` preserves the Python packages selected by Conda. For source development,
+use `python -m pip install --no-deps -e .` from the intended checkout; use
+`python -m pip install --no-deps .` for a non-editable source installation.
 
 Optional screening uses a separate native-tool environment. eggNOG-mapper's
 DIAMOND `<2.1` requires zlib `<1.3`, while current AMRFinderPlus requires a newer
@@ -139,6 +138,16 @@ Install the test extras:
 python -m pip install -e '.[test]'
 pytest -q
 ~~~
+
+## Upgrading from beta 1
+
+Beta 2 fixes CLI stream handling and interrupted download/run recovery; it does
+not change the underlying profiling algorithms. Preserve earlier outputs. Strict
+`--resume` rejects outputs lacking the new database identities; rerun into a fresh
+output directory rather than modifying metadata. See [recovery](recovery.md).
+
+The [development benchmark](benchmarking.md) retains a failed taxonomy gate and
+unresolved reference/timing discrepancies. Biological validation is incomplete.
 
 ## Troubleshooting
 

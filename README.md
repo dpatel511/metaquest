@@ -1,14 +1,15 @@
 # MetaQuest
 
 MetaQuest is a research-use command-line pipeline for short-read metagenomic
-FASTQ analysis. This checkout prepares the `2.0.0b1` research beta, with a
+FASTQ analysis. The `2.0.0b2` research beta provides a
 maintained workflow for profiling, assembly, annotation, abundance and reporting.
 It does not make clinical or pathogen-risk claims.
 
 Screening and restored comparison are included in the beta. Screening covers
 16 human-associated bacterial species targets and curated, organism-dependent
 AMRFinderPlus protein families. Formal two-group comparisons are exploratory.
-The older `2.0.0a1` package does not contain these additions.
+The older `2.0.0a1` package does not contain these additions. Beta 2 adds CLI and
+recovery fixes and records the first full development benchmark.
 
 ## Current capabilities
 
@@ -56,27 +57,28 @@ Snakemake and optional Bowtie2 host filtering remain planned.
 
 ## Quick start
 
-After beta publication, install the exact Python distribution from PyPI:
+Install the exact Python distribution from PyPI:
 
 ~~~bash
-python -m pip install --pre 'metaquest-bio==2.0.0b1'
+python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b2'
 metaquest --version
 ~~~
 
-Before publication, install this checkout using the Conda instructions below.
 The distribution is named `metaquest-bio`; the installed Python package and
 command remain `metaquest`. The PyPI distribution does not bundle Kraken2,
 Bracken, MEGAHIT, DIAMOND, or eggNOG-mapper. For the complete runtime, clone
 the repository and create its Conda environment before installing the package:
 
 ~~~bash
+git clone --branch v2.0.0b2 https://github.com/dpatel511/metaquest.git
+cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
-python -m pip install .
+python -m pip install --no-deps 'metaquest-bio==2.0.0b2'
 ~~~
 
 For optional screening, also install `environment/screening.yml` separately and
-append its executables to PATH using the [installation guide](docs/installation.md).
+append its executables to PATH using the [installation guide](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/installation.md).
 It isolates AMRFinderPlus's native libraries from eggNOG's older DIAMOND stack.
 
 Inspect and install the taxonomy database:
@@ -163,26 +165,41 @@ The database path resolution order is:
 
 ## Documentation
 
-- [Installation](docs/installation.md)
-- [Database management](docs/databases.md)
-- [Usage](docs/usage.md)
-- [Gene prediction and functional annotation](docs/annotation.md)
-- [Research screening and comparative analysis](docs/screening-comparison.md)
-- [Release process](docs/releasing.md)
-- [Reproducible acceptance checks](docs/acceptance.md)
-- [Changelog](CHANGELOG.md)
+- [Installation](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/installation.md)
+- [Database management](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/databases.md)
+- [Usage](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/usage.md)
+- [Gene prediction and functional annotation](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/annotation.md)
+- [Research screening and comparative analysis](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/screening-comparison.md)
+- [Release process](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/releasing.md)
+- [Reproducible acceptance checks](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/acceptance.md)
+- [Biological benchmark protocol](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/benchmarking.md)
+- [Development checkpoints](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/development-checkpoints.md)
+- [Changelog](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/CHANGELOG.md)
 
-## Development status
+## Validation status
 
-MetaQuest is beta software intended for reproducible method development. Before
-a stable release, the workflow requires end-to-end Snakemake execution,
-functional and pathogen-associated method validation, resource benchmarks,
-comparison-method validation, and publication datasets.
+The complete ERR2984773 development mock reproduced direct Kraken2, Bracken and
+Pyrodigal outputs. At the frozen 0.1% detection threshold, all eight expected
+bacterial members were detected alongside five unexpected species calls:
+8/13 (61.54%) detection precision, below the proposed 90% project gate. This is
+not per-read classification accuracy. The Standard-8 database excludes fungi.
+
+The benchmark also retains unresolved assembly/reference disagreements and
+conflicting elapsed times. It skipped functional annotation and screening.
+See the [full benchmark results](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/benchmarks/zymo-even/RESULTS.md) and
+[protocol](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/benchmarking.md) before interpreting these results.
+
+MetaQuest remains beta software. Biological benchmarking, comparative-method
+validation, browser/data-contract review and independent user acceptance remain
+open in the [development checkpoints](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/development-checkpoints.md). Larger
+database comparisons are deferred; passing software tests does not close these
+gates. Older outputs lacking current database identities require a new run
+instead of strict `--resume`; see [recovery](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/docs/recovery.md).
 
 ## License
 
 MetaQuest is distributed under the GNU General Public License v3.0 or later.
 Copyright (c) 2026 Dev Patel. External programs and reference databases are not
 included in the Python distribution and remain subject to their own terms. See
-[Third-party licenses](THIRD_PARTY_LICENSES.md) for the maintained dependency
+[Third-party licenses](https://github.com/dpatel511/metaquest/blob/v2.0.0b2/THIRD_PARTY_LICENSES.md) for the maintained dependency
 and provenance inventory.
