@@ -1,4 +1,4 @@
-# MetaQuest v2.0.0b1 — Python dependencies
+# MetaQuest — Python dependencies
 # For the external bioinformatics environment (Kraken2, Bracken, MEGAHIT,
 # DIAMOND, etc.)
 # use: conda env create -f environment/environment.yml

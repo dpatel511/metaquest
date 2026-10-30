@@ -1,4 +1,4 @@
-# Development checkpoints after 2.0.0b1
+# Development checkpoints
 
 Keep the current beta scope fixed while improving reliability, evidence and
 usability. A passing software test suite does not establish biological accuracy.
@@ -20,7 +20,7 @@ user feedback, see List, Ebert and Albrecht's
 
 ## Recorded baseline
 
-- Released package: `metaquest-bio==2.0.0b1`.
+- Original beta baseline: `metaquest-bio==2.0.0b1`; observations below retain that version identity.
 - Prior release evidence: all six required CI jobs passed; the downloaded
   production wheel passed 95 tests outside the source checkout. See
   [release CI](https://github.com/dpatel511/metaquest/actions/runs/40753444237)
@@ -37,7 +37,7 @@ user feedback, see List, Ebert and Albrecht's
   this was not a new clean-install test of all dependencies.
 - Local audit evidence is in ignored `test_results/seemann-audit/cli-audit.json`
   with separate stdout/stderr captures and the probe script. It is not included
-  in the distribution. The source formatter also uses stdout for progress.
+  in the distribution. The b1 source formatter also used stdout for progress.
 
 ## 1. Command-line contract: first fix checkpoint
 
@@ -48,7 +48,7 @@ Seemann's recommendations, paraphrased and mapped to current evidence:
 | Useful response without arguments | Usage text observed; retain a subprocess regression. |
 | Standard help options | Root and six subcommands passed both `-h` and `--help`. |
 | Readable version option | Both `-v` and `--version` passed. |
-| Diagnostics on stderr | Fails three error probes; progress also needs routing. |
+| Diagnostics on stderr | Three b1 probes failed; merged CLI regressions verify the fix. |
 | Nonzero exit on failure | Six probed failures returned the expected nonzero codes; expand coverage. |
 | Validate arguments | Missing/unknown arguments tested; numerical boundaries need audit. |
 | Avoid fixed installation paths | Configurable paths exist; relocation still needs testing. |
@@ -59,8 +59,9 @@ Seemann's recommendations, paraphrased and mapped to current evidence:
 Local implementation on `fix/cli-contract` (2026-10-29): terminal diagnostics,
 validation errors, debug output and spinner activity now use stderr. Fatal
 validation messages survive quiet mode; invalid validation thresholds and thread
-counts fail before output creation. This is a local candidate, not an update to
-the already published beta.
+counts fail before output creation. The fix was merged in
+[PR #30](https://github.com/dpatel511/metaquest/pull/30) and is included in beta 2;
+the already published b1 artifacts are unchanged.
 
 Verification added 44 CLI/formatter cases. The source suite passed 136 tests
 with three native tests skipped and 276 deprecation warnings in the older
@@ -69,9 +70,10 @@ dependencies and existing native fixtures passed all 139 tests, with no skips
 or warnings. Lint, dependency consistency, strict wheel metadata and direct
 dependency license checks passed. Evidence is retained locally in ignored
 `test_results/seemann-audit/`. CI includes these new tests through its existing
-source and isolated-wheel jobs; remote CI has not been run for this branch.
+source and isolated-wheel jobs. The merged main commit passed
+[remote CI](https://github.com/dpatel511/metaquest/actions/runs/40883592059).
 
-Interrupt/child-process recovery remains to be exercised with checkpoint 2;
+Handled-signal and child-process recovery were exercised under checkpoint 2;
 these CLI checks alone do not close every recovery or biological-validation gate.
 
 Pass criteria:
@@ -98,8 +100,10 @@ Local verification on 2026-10-29 added 34 recovery/process cases. The complete
 source and independently installed-wheel suites each passed 173 tests with no
 skips or warnings, including the existing native controls. Lint, strict wheel
 metadata, dependency consistency and license checks passed; 40 packaged source,
-config and catalog files matched the checkout. Remote CI and publication remain
-pending for this checkpoint branch. Evidence is retained under ignored
+config and catalog files matched the checkout. The fixes were merged in
+[PR #31](https://github.com/dpatel511/metaquest/pull/31), and the merged main commit
+passed [remote CI](https://github.com/dpatel511/metaquest/actions/runs/40891232601).
+They are included in beta 2. Evidence is retained under ignored
 `test_results/recovery-check/`.
 
 Verification: use disposable output/database directories to exercise interrupted
@@ -128,6 +132,11 @@ from whole-community scope, held-out validation and the remaining accuracy gates
 The [full-data baseline results](../benchmarks/zymo-even/RESULTS.md) retain a failed
 primary taxonomy gate, structural reference disagreements and a timing discrepancy;
 checkpoint 3 remains open despite passing software and accounting checks.
+The benchmark tools/results were merged in
+[PR #32](https://github.com/dpatel511/metaquest/pull/32) and passed
+[main CI](https://github.com/dpatel511/metaquest/actions/runs/41128345467).
+Larger-database testing is deferred because of available hardware; this does not
+close the remaining biological-validation gates.
 
 Verification: choose public mock-community data with documented composition and
 compatible ground truth. Record accessions, checksums, truth provenance and

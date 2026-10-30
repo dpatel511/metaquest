@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## [2.0.0b2] — 2026-10-30
+
+Reliability beta with CLI and recovery fixes plus a reproducible development
+benchmark. Biological benchmarking remains incomplete; this release does not
+claim improved classification accuracy. See the
+[recorded results](benchmarks/zymo-even/RESULTS.md) for the failed primary taxonomy
+gate, unresolved structural disagreements and timing discrepancy. Larger-database
+testing is deferred because of available hardware.
+
+Older outputs without the new database identities cannot be reused with strict
+`--resume`. Preserve the original results and rerun into a new directory.
+
+- Include tests, benchmark support, documentation and environment definitions in
+  the source distribution; run its extracted test suite in CI.
+
 - Start checkpoint 3 with a frozen full-mock benchmark protocol and independent
   taxonomy scorer, explicit paired-fragment denominators, database coverage and
   development-versus-held-out limits; add calculation and provenance regressions.

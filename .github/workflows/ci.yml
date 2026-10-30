@@ -71,6 +71,12 @@ jobs:
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/metaquest-wheel/bin/metaquest" --version
           "$RUNNER_TEMP/metaquest-wheel/bin/python" -m pytest -q wheel-tests
+      - name: Verify tests from the source distribution
+        run: |
+          mkdir "$RUNNER_TEMP/source-distribution"
+          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/source-distribution"
+          cd "$RUNNER_TEMP/source-distribution"/metaquest_bio-*
+          "$RUNNER_TEMP/metaquest-wheel/bin/python" -m pytest -q
 
   conda:
     name: Conda integration (Python 3.11)

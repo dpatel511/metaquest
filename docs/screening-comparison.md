@@ -1,7 +1,8 @@
 # Research screening and comparative analysis
 
-These features are included in `2.0.0b1`. Before beta publication, install this
-checkout with `python -m pip install -e .`; the older PyPI alpha does not contain them.
+These features are included in the research beta (`2.0.0b2`; introduced in
+`2.0.0b1`). Follow the [installation guide](installation.md) for the Python package
+and separate native-tool environments. The older PyPI alpha does not contain them.
 
 ## Run the complete workflow with screening
 

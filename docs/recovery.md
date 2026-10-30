@@ -103,7 +103,10 @@ python -m pytest -q tests/test_recovery.py tests/test_process_recovery.py
 On 2026-10-29, all 34 recovery/process tests passed. The full source and installed
 wheel suites each passed 173 tests, including existing native fixtures, without
 skips or warnings. Lint, strict wheel metadata, dependency and license checks also
-passed. This is local verification; the checkpoint branch has not run remote CI.
+passed. The changes were merged in
+[PR #31](https://github.com/dpatel511/metaquest/pull/31); the merged main commit
+passed [remote CI](https://github.com/dpatel511/metaquest/actions/runs/40891232601).
+These recovery guarantees apply to beta 2; prior public b1 artifacts are unchanged.
 
 The native control used the existing 10,000-pair mock-community smoke fixture,
 omitting functional search, abundance and screening. An interruption before gene
