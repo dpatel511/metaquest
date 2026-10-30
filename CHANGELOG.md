@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Start checkpoint 3 with a frozen full-mock benchmark protocol and independent
+  taxonomy scorer, explicit paired-fragment denominators, database coverage and
+  development-versus-held-out limits; add calculation and provenance regressions.
+- Add a checksum/content-verified QUAST coverage summarizer and retain the first
+  baseline's failed taxonomy gate, apparent structural disagreements and timer
+  discrepancy alongside passing integration checks.
+
 - Preserve database installations across failed/interrupted promotion, recover
   durable replacement backups, validate manifests and discard corrupt functional
   archives so retries can download them again.

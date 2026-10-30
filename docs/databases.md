@@ -15,6 +15,12 @@ database release used by an analysis.
 The taxonomy archive comes from the official Kraken2 index catalog:
 <https://benlangmead.github.io/aws-indexes/k2>.
 
+Standard-8 covers RefSeq bacteria, archaea, viruses, plasmids, human and
+UniVec_Core; it does **not** include the fungal/protozoan libraries in PlusPF.
+Do not interpret missing fungal calls as biological absence. The capped index
+also trades sensitivity/accuracy for memory size. See the
+[benchmark protocol](benchmarking.md) for how this limits mock-community scoring.
+
 Planned entries are visible so users can understand the intended layout, but
 MetaQuest refuses to install them until their versions and validation contracts
 are finalized. The functional profile installs eggNOG annotation, taxonomy, and

@@ -1,0 +1,46 @@
+{
+  "protocol_version": 1,
+  "dataset": "ERR2984773",
+  "role": "development baseline; previously used during development, not held out",
+  "study": "PRJEB29504",
+  "sample": "SAMEA5157164",
+  "license": "CC-BY-4.0; Nicholls et al. 2019",
+  "source": "https://doi.org/10.1093/gigascience/giz043",
+  "raw_read_pairs": 8785731,
+  "inputs": [
+    {"name": "ERR2984773_1.fastq.gz", "bytes": 927693096, "md5": "f5794d7ab28de74d803e9dad609a150a"},
+    {"name": "ERR2984773_2.fastq.gz", "bytes": 1028981403, "md5": "78bf00772b0cd8168ce37c16df345f7d"}
+  ],
+  "taxonomy_database": {"release": "2026-06-26", "collection": "Standard-8", "fungi_included": false},
+  "primary_threshold": 0.001,
+  "secondary_thresholds": [0.0001, 0.01],
+  "threshold_denominator": "all post-fastp paired fragments, including unclassified fragments",
+  "minimum_bacterial_recall": 1.0,
+  "minimum_community_precision": 0.9,
+  "abundance_truth": "nominal DNA proportions; descriptive distance only, not exact read-fraction truth",
+  "expected_members": [
+    {"name": "Bacillus spizizenii (paper: B. subtilis, ATCC 6633)", "taxids": [96241], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Enterococcus faecalis", "taxids": [1351], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Escherichia coli", "taxids": [562], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Limosilactobacillus fermentum", "taxids": [1613], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Listeria monocytogenes", "taxids": [1639], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Pseudomonas aeruginosa", "taxids": [287], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Salmonella enterica", "taxids": [28901], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Staphylococcus aureus", "taxids": [1280], "bacterial": true, "dna_fraction": 0.12},
+    {"name": "Saccharomyces cerevisiae", "taxids": [4932], "bacterial": false, "dna_fraction": 0.02},
+    {"name": "Cryptococcus neoformans x C. deneoformans (hybrid member)", "taxids": [5207, 40410], "bacterial": false, "dna_fraction": 0.02}
+  ],
+  "identity_sources": [
+    "https://www.atcc.org/products/6633",
+    "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=96241",
+    "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=1613",
+    "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=40410"
+  ],
+  "reference": {
+    "url": "https://nanopore.s3.climb.ac.uk/mockcommunity/v2/Zymo-Isolates-SPAdes-Illumina.fasta",
+    "md5": "e7b60972c37869e0e91513a06bdf9d33",
+    "kind": "author-provided filtered isolate draft assemblies; reference agreement, not finished-genome truth",
+    "source": "https://lomanlab.github.io/mockcommunity/"
+  },
+  "interpretation": "Proposed project thresholds frozen before this full-data run. Passing the bacterial gate does not establish fungal coverage, clinical accuracy or completion of checkpoint 3. Retain failures; do not tune against this baseline and call it independent validation."
+}

@@ -122,6 +122,13 @@ Pass criteria:
 
 ## 3. Biological benchmarking
 
+The first development-data baseline follows the frozen
+[benchmark protocol](benchmarking.md). Keep its bacterial detection gate separate
+from whole-community scope, held-out validation and the remaining accuracy gates.
+The [full-data baseline results](../benchmarks/zymo-even/RESULTS.md) retain a failed
+primary taxonomy gate, structural reference disagreements and a timing discrepancy;
+checkpoint 3 remains open despite passing software and accounting checks.
+
 Verification: choose public mock-community data with documented composition and
 compatible ground truth. Record accessions, checksums, truth provenance and
 licenses. Freeze thresholds and acceptance limits before scoring held-out data.
