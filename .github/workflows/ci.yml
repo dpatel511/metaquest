@@ -67,6 +67,7 @@ jobs:
           python -m venv "$RUNNER_TEMP/metaquest-wheel"
           "$RUNNER_TEMP/metaquest-wheel/bin/python" -m pip install dist/*.whl pytest
           cp -R tests "$RUNNER_TEMP/wheel-tests"
+          cp -R tools benchmarks "$RUNNER_TEMP/"
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/metaquest-wheel/bin/metaquest" --version
           "$RUNNER_TEMP/metaquest-wheel/bin/python" -m pytest -q wheel-tests

@@ -1,0 +1,13 @@
+assembly:
+  threads: 4
+classification:
+  threads: 4
+annotation:
+  threads: 4
+abundance:
+  threads: 4
+  java_memory: 2g
+preprocessing:
+  threads: 4
+reporting:
+  plot_dpi: 160
