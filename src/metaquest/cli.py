@@ -541,7 +541,9 @@ def create_parser():
         description=(
             'Align full taxonomy or functional profiles with provenance checks. '
             'Optionally test two independent groups on CLR relative abundances. '
-            'Tests are exploratory and do not adjust for pairing or covariates.'
+            'Tests are exploratory and do not adjust for pairing or covariates. '
+            'Nonconstant tied CLR profiles require at least 10 samples per group; '
+            'untied studies require at least 3.'
         ),
         formatter_class=CustomHelpFormatter,
     )

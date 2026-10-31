@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## [2.0.0b3] — 2026-10-31
+
+Corrective research beta for comparative-analysis safeguards. In a declared
+small tied global-null model, beta 2 reached 8.21% FDR under BH at nominal 5%.
+Beta 3 rejects nonconstant tied CLR features when either group has fewer than
+10 samples; constant pooled features retain p=1 and untied studies retain the
+three-sample input minimum. No permutation or batch-adjusted model is added.
+
+Existing result files are preserved. Comparison inputs now require complete,
+compatible model/preprocessing evidence; reprocess missing legacy evidence
+rather than editing metadata. The synthetic audit does not close biological,
+browser-review or independent-acceptance checkpoints.
+
+- Preserve frozen benchmark protocol checksums across Windows/Linux checkouts
+  using explicit LF attributes and byte-identity regressions.
 - Audit independent-group comparisons: reject shared input files and repeated
   subjects hidden by whitespace, incompatible Bracken models/preprocessing,
   malformed profiles and nonempty comparison outputs; reconcile taxonomic

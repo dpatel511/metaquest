@@ -1,0 +1,4 @@
+# Preserve the exact byte identities of frozen benchmark protocols.
+benchmarks/zymo-even/protocol.json text eol=lf
+benchmarks/comparison/protocol.json text eol=lf
+benchmarks/comparison/tied-null-protocol.json text eol=lf

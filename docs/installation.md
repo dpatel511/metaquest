@@ -1,6 +1,6 @@
 # Installation
 
-This guide covers the MetaQuest `2.0.0b2` research beta.
+This guide covers the MetaQuest `2.0.0b3` research beta.
 
 ## Supported environment
 
@@ -19,7 +19,7 @@ The distribution is named `metaquest-bio`; it installs the `metaquest` Python
 package and CLI command:
 
 ~~~bash
-python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b2'
+python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b3'
 metaquest --version
 ~~~
 
@@ -32,11 +32,11 @@ repository's Conda environment.
 Use the environment files matching the package release:
 
 ~~~bash
-git clone --branch v2.0.0b2 https://github.com/dpatel511/metaquest.git
+git clone --branch v2.0.0b3 https://github.com/dpatel511/metaquest.git
 cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
-python -m pip install --no-deps 'metaquest-bio==2.0.0b2'
+python -m pip install --no-deps 'metaquest-bio==2.0.0b3'
 ~~~
 
 `--no-deps` preserves the Python packages selected by Conda. For source development,
@@ -139,12 +139,25 @@ python -m pip install -e '.[test]'
 pytest -q
 ~~~
 
-## Upgrading from beta 1
+## Upgrading from earlier betas
 
 Beta 2 fixes CLI stream handling and interrupted download/run recovery; it does
 not change the underlying profiling algorithms. Preserve earlier outputs. Strict
 `--resume` rejects outputs lacking the new database identities; rerun into a fresh
 output directory rather than modifying metadata. See [recovery](recovery.md).
+
+Beta 3 adds comparison safeguards. Nonconstant tied CLR features are rejected
+when either group has fewer than 10 samples; untied studies still require at
+least three. All-pooled-constant features retain p=1. The current method does
+not substitute a permutation, paired or batch-adjusted test.
+
+Comparisons require compatible selected Bracken models, preprocessing/tool
+versions and count/rank evidence. Formal studies also require complete raw-file
+SHA-256 values and independent subjects/files. Existing b2 results with complete
+provenance can be reused as comparison inputs; incomplete legacy outputs need
+reprocessing. Preserve original results rather than editing their metadata.
+See [comparison validation](comparison-validation.md) for the measured b2 failure,
+new boundary and interpretation limits.
 
 The [development benchmark](benchmarking.md) retains a failed taxonomy gate and
 unresolved reference/timing discrepancies. Biological validation is incomplete.

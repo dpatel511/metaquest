@@ -1,14 +1,16 @@
 # Checkpoint 4: comparative-analysis audit
 
 Status: local validation criteria met after correcting input/output contracts and
-restricting unsupported small tied studies. This is an **unreleased audit candidate**;
-remote CI and review are required before merging. Public `2.0.0b2` artifacts are unchanged.
+restricting unsupported small tied studies. The safeguards are included in
+**2.0.0b3** after [PR #34](https://github.com/dpatel511/metaquest/pull/34) merged and
+[main CI](https://github.com/dpatel511/metaquest/actions/runs/41244598939) passed.
+Original `2.0.0b2` artifacts are unchanged.
 
 ## Scope and frozen protocols
 
 The source baseline is `cd1050fc8a6f9c1fe7766a42e3dacd3337e03bce`. Local checks
 used Python 3.11.9, NumPy 2.4.6, pandas 3.1.0 and SciPy 1.17.1. The additional
-supported Python versions still require remote CI.
+supported Python versions passed the merged audit CI matrix (3.10/3.11/3.12).
 The [primary protocol](protocol.json) was frozen before simulation with SHA-256
 `44b236dd6e3bbd97c0cab31d1f59e0e61c3351cfc4ccfc939881e2adb6253b5a`.
 The supplemental [exact tied-null protocol](tied-null-protocol.json), added after
@@ -110,9 +112,11 @@ the nominal threshold in this particular two-point family. This is not universal
 | Public b2 numerical parity | 80 admitted study/correction evaluations; 1,898 feature rows agree within 1e-12 |
 | Protocol and final simulation source | Frozen protocol and all 40 source/config/catalog hashes unchanged |
 
-The same package version is used only for an ignored local candidate wheel; it is
-not a replacement upload of public b2. The two skipped AMRFinderPlus controls and
-remote CI are not claimed as newly passed here. Source distributions include tools, protocols and test support.
+During the local audit, the same b2 version was used only for an ignored candidate
+wheel; it was not a replacement upload of public b2. The local skips above remain
+recorded. The subsequent merged native CI ran all 282 tests without skips, covering
+the AMRFinderPlus controls. Beta 3 carries the fixes in a new version. Source
+distributions include tools, protocols and test support.
 
 ## Resources and remaining limits
 
