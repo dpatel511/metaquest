@@ -1,0 +1,164 @@
+{
+  "protocol_sha256": "44b236dd6e3bbd97c0cab31d1f59e0e61c3351cfc4ccfc939881e2adb6253b5a",
+  "primary": [
+    {
+      "scenario": "dense_null",
+      "method": "by",
+      "replicates": 500,
+      "global_null_discovery_studies": 1,
+      "empirical_fdr": 0.002,
+      "wilson_95": [
+        0.00035313639455927456,
+        0.011240706705146758
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "dense_null",
+      "method": "bh",
+      "replicates": 500,
+      "global_null_discovery_studies": 17,
+      "empirical_fdr": 0.034,
+      "wilson_95": [
+        0.02133451980853219,
+        0.053771365501634506
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "unbalanced_null",
+      "method": "by",
+      "replicates": 500,
+      "global_null_discovery_studies": 9,
+      "empirical_fdr": 0.018,
+      "wilson_95": [
+        0.009498193296197078,
+        0.033851670908739286
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "unbalanced_null",
+      "method": "bh",
+      "replicates": 500,
+      "global_null_discovery_studies": 20,
+      "empirical_fdr": 0.04,
+      "wilson_95": [
+        0.026040797389777257,
+        0.060973595834850805
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "sparse_null",
+      "method": "by",
+      "replicates": 500,
+      "global_null_discovery_studies": 0,
+      "empirical_fdr": 0.0,
+      "wilson_95": [
+        4.336808689942018e-19,
+        0.007624340461552241
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "sparse_null",
+      "method": "bh",
+      "replicates": 500,
+      "global_null_discovery_studies": 14,
+      "empirical_fdr": 0.028,
+      "wilson_95": [
+        0.01675097472075645,
+        0.04644640267494888
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "balanced_clr_effect",
+      "method": "by",
+      "replicates": 500,
+      "fdp": {
+        "mean": 0.006,
+        "mc_standard_error": 0.0019839031587975692,
+        "lower_one_sided_95": 0,
+        "upper_one_sided_95": 0.06073328305111973
+      },
+      "target_recall": {
+        "mean": 0.977,
+        "mc_standard_error": 0.005291313257782416,
+        "lower_one_sided_95": 0.9222667169488803,
+        "upper_one_sided_95": 1
+      },
+      "direction_wilson_95": [
+        0.9923756595384479,
+        1
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "balanced_clr_effect",
+      "method": "bh",
+      "replicates": 500,
+      "fdp": {
+        "mean": 0.03286666666666667,
+        "mc_standard_error": 0.004629637420018681,
+        "lower_one_sided_95": 0,
+        "upper_one_sided_95": 0.0875999497177864
+      },
+      "target_recall": {
+        "mean": 0.992,
+        "mc_standard_error": 0.003145120596596301,
+        "lower_one_sided_95": 0.9372667169488803,
+        "upper_one_sided_95": 1
+      },
+      "direction_wilson_95": [
+        0.9923756595384479,
+        1
+      ],
+      "passed": true
+    }
+  ],
+  "tied_null_public_failures": [
+    {
+      "n_comparison": 3,
+      "n_reference": 30,
+      "probability": 0.05,
+      "method": "bh",
+      "unsupported_probability_mass": 0.0,
+      "exact_global_null_fdr": 0.08207435545078212,
+      "passes_nominal_alpha": false
+    },
+    {
+      "n_comparison": 3,
+      "n_reference": 30,
+      "probability": 0.1,
+      "method": "bh",
+      "unsupported_probability_mass": 0.0,
+      "exact_global_null_fdr": 0.06789951264672607,
+      "passes_nominal_alpha": false
+    },
+    {
+      "n_comparison": 3,
+      "n_reference": 30,
+      "probability": 0.9,
+      "method": "bh",
+      "unsupported_probability_mass": 0.0,
+      "exact_global_null_fdr": 0.06789951264672602,
+      "passes_nominal_alpha": false
+    },
+    {
+      "n_comparison": 3,
+      "n_reference": 30,
+      "probability": 0.95,
+      "method": "bh",
+      "unsupported_probability_mass": 0.0,
+      "exact_global_null_fdr": 0.08207435545078225,
+      "passes_nominal_alpha": false
+    }
+  ],
+  "supported_tied_calibration_passed": true,
+  "public_b2_unchanged": true,
+  "scope": "Synthetic software/method validation; not biological accuracy",
+  "tied_null_protocol_sha256": "5905dfa525aa219dfd383cc6b7802180fc6ca5c857032b71213a7995e6a2cef5",
+  "small_nonconstant_tied_studies": "Unsupported when either group has fewer than 10 observations; no zero-FDR claim for blocked designs."
+}

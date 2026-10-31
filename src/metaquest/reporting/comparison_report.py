@@ -75,6 +75,13 @@ def write_comparison_report(output, relative, labels, qc, distances, tests, summ
             f"Features: {relative.shape[1]}", f"Method: {summary['statistics']['method']}"]
     if tests is not None:
         text += [f"Features passing FDR: {int(tests['passes_fdr'].sum())} / {len(tests)}",
-                 f"Correction: {summary['statistics']['fdr_method']}; alpha={summary['statistics']['alpha']}"]
+                 f"Correction: {summary['statistics']['fdr_method']}; alpha={summary['statistics']['alpha']}",
+                 f"Contrast: {summary['statistics']['comparison_group']} - {summary['statistics']['reference_group']}",
+                 f"Transformation: {summary['statistics']['transformation']}",
+                 f"Pseudocount: {summary['statistics']['pseudocount']} (proportion of full profile total)",
+                 f"Prevalence threshold: {summary['statistics']['min_prevalence']}; tested={summary['statistics']['features_tested']}; excluded={summary['statistics']['features_excluded']}",
+                 f"Design: {summary['statistics']['design']}",
+                 f"P-value policy: {summary['statistics']['pvalue_policy']}",
+                 f"Small tied features: {summary['statistics']['small_tied_features']}"]
     text += ["", "Interpretation limits", *summary["limitations"]]
     (output / "comparison_report.txt").write_text("\n".join(text) + "\n")

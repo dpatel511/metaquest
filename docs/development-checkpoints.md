@@ -164,6 +164,15 @@ Pass criteria:
 
 ## 4. Comparative-analysis validity
 
+The unreleased [comparison audit](comparison-validation.md) uses a frozen
+[simulation protocol](../benchmarks/comparison/protocol.json) and records
+[observed results](../benchmarks/comparison/RESULTS.md). Keep these synthetic
+checks separate from biological accuracy and the deferred checkpoint 3. Local
+criteria passed with 280 tests passing in each source/wheel/source-archive suite
+and two native screening controls skipped. The exact small/tied-null failure is
+retained; the candidate rejects that unsupported case. Remote CI/review are
+required before merging; public b2 is unchanged.
+
 Verification: retain deterministic calculation fixtures and add independent
 null/effect simulations for the supported two-independent-group design.
 

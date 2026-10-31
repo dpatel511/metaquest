@@ -135,9 +135,11 @@ The correction includes every tested feature, not just displayed features.
 The report records the retained feature count, settings and SciPy version.
 
 The initial design requires exactly two independent groups with at least three
-samples per group. Three is an input minimum, not a power recommendation;
+samples per group. Three is an input minimum for untied data, not a power recommendation;
 small groups have very limited power after correction. Duplicate input hashes
-and repeated nonempty `subject_id` values are rejected for formal tests.
+and repeated nonempty `subject_id` values are rejected for formal tests. Subject
+IDs are stripped of surrounding whitespace; even one shared raw-file hash across
+samples prevents treating them as independent.
 Users must still verify biological independence, batch balance, confounding and
 replicate identity: different files do not prove different biological samples.
 Paired, longitudinal, covariate-adjusted and multi-group designs are unsupported.
@@ -150,3 +152,21 @@ can count a gene in several terms. These tests do not establish absolute fold
 changes, causality or clinical risk. See the primary
 [Mann–Whitney documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html)
 and [FDR correction documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html).
+
+
+## Comparison audit and input compatibility
+
+The unreleased [checkpoint 4 audit](comparison-validation.md) records frozen
+synthetic studies and independent arithmetic checks. It does not establish
+biological accuracy. Public `2.0.0b2` artifacts retain their original behavior.
+
+The audit candidate requires matching selected Bracken read-length models,
+compatible preprocessing/tool provenance, integer taxonomic counts matching the
+source summary, unique valid identifiers and consistent labels. Formal studies
+require complete raw-file SHA-256 values. Legacy results missing this evidence
+must be reprocessed; do not insert fabricated metadata. Comparison output must
+be new or empty before the CLI starts (its diagnostic log is allowed). Text methods now state the actual contrast, CLR definition,
+pseudocount, filtering and correction, and reject nonconstant tied CLR features when either group has fewer than 10
+samples. A supplemental exact null calculation found miscalibration in the public
+beta for small, unequal tied groups. No permutation-based
+or batch-adjusted method is silently substituted.
