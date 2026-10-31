@@ -117,3 +117,11 @@ def test_force_preserves_existing_output_as_backup(tmp_path):
     backups = list(tmp_path.glob("results.metaquest-backup-*"))
     assert len(backups) == 1
     assert (backups[0] / "analysis_metadata.json").is_file()
+
+
+
+def test_compare_help_explains_supported_sample_sizes():
+    help_text = create_parser()._subparsers._group_actions[0].choices["compare"].format_help()
+    text = " ".join(help_text.split())
+    assert "at least 10 samples per group" in text
+    assert "untied studies require at least 3" in text

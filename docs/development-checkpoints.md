@@ -164,14 +164,16 @@ Pass criteria:
 
 ## 4. Comparative-analysis validity
 
-The unreleased [comparison audit](comparison-validation.md) uses a frozen
+The [comparison audit](comparison-validation.md), included in beta 3, uses a frozen
 [simulation protocol](../benchmarks/comparison/protocol.json) and records
 [observed results](../benchmarks/comparison/RESULTS.md). Keep these synthetic
 checks separate from biological accuracy and the deferred checkpoint 3. Local
 criteria passed with 280 tests passing in each source/wheel/source-archive suite
 and two native screening controls skipped. The exact small/tied-null failure is
-retained; the candidate rejects that unsupported case. Remote CI/review are
-required before merging; public b2 is unchanged.
+retained; beta 3 rejects that unsupported case. The audit merged in
+[PR #34](https://github.com/dpatel511/metaquest/pull/34) and passed
+[main CI](https://github.com/dpatel511/metaquest/actions/runs/41244598939), including
+282 native tests without skips. Original public b2 artifacts are unchanged.
 
 Verification: retain deterministic calculation fixtures and add independent
 null/effect simulations for the supported two-independent-group design.

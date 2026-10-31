@@ -1,6 +1,6 @@
 # Research screening and comparative analysis
 
-These features are included in the research beta (`2.0.0b2`; introduced in
+These features are included in the research beta (`2.0.0b3`; introduced in
 `2.0.0b1`). Follow the [installation guide](installation.md) for the Python package
 and separate native-tool environments. The older PyPI alpha does not contain them.
 
@@ -134,8 +134,10 @@ among tests; `bh` assumes independence or appropriate positive dependence.
 The correction includes every tested feature, not just displayed features.
 The report records the retained feature count, settings and SciPy version.
 
-The initial design requires exactly two independent groups with at least three
-samples per group. Three is an input minimum for untied data, not a power recommendation;
+The supported design requires exactly two independent groups with at least three
+samples per group for untied data. Nonconstant tied CLR features require at least
+10 samples in each group; smaller tied studies fail with a permutation-test
+explanation. Constant pooled features retain p=1. Three is not a power recommendation;
 small groups have very limited power after correction. Duplicate input hashes
 and repeated nonempty `subject_id` values are rejected for formal tests. Subject
 IDs are stripped of surrounding whitespace; even one shared raw-file hash across
@@ -156,17 +158,17 @@ and [FDR correction documentation](https://docs.scipy.org/doc/scipy/reference/ge
 
 ## Comparison audit and input compatibility
 
-The unreleased [checkpoint 4 audit](comparison-validation.md) records frozen
+Beta 3 includes the [checkpoint 4 audit](comparison-validation.md), with frozen
 synthetic studies and independent arithmetic checks. It does not establish
-biological accuracy. Public `2.0.0b2` artifacts retain their original behavior.
+biological accuracy. Original `2.0.0b2` artifacts retain their behavior.
 
-The audit candidate requires matching selected Bracken read-length models,
+Beta 3 requires matching selected Bracken read-length models,
 compatible preprocessing/tool provenance, integer taxonomic counts matching the
 source summary, unique valid identifiers and consistent labels. Formal studies
 require complete raw-file SHA-256 values. Legacy results missing this evidence
 must be reprocessed; do not insert fabricated metadata. Comparison output must
 be new or empty before the CLI starts (its diagnostic log is allowed). Text methods now state the actual contrast, CLR definition,
 pseudocount, filtering and correction, and reject nonconstant tied CLR features when either group has fewer than 10
-samples. A supplemental exact null calculation found miscalibration in the public
-beta for small, unequal tied groups. No permutation-based
+samples. A supplemental exact null calculation found miscalibration in beta 2
+for small, unequal tied groups. No permutation-based
 or batch-adjusted method is silently substituted.

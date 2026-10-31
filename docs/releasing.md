@@ -50,7 +50,7 @@ In a fresh complete Conda environment, repeat the documented small pipeline run
 using that uploaded package instead of `pip install -e .`:
 
 ```bash
-python -m pip install --no-deps --index-url https://test.pypi.org/simple/ 'metaquest-bio==2.0.0b2'
+python -m pip install --no-deps --index-url https://test.pypi.org/simple/ 'metaquest-bio==2.0.0b3'
 metaquest --version
 ```
 
@@ -93,16 +93,24 @@ Older outputs lacking complete provenance may be unsuitable for `compare` or
 strict `--resume`. Reprocess into a new directory rather than editing provenance
 to force compatibility. Keep original output directories intact.
 
-## Beta 2 scope and residual limits
+## Beta 3 scope and residual limits
 
-`2.0.0b2` carries the merged CLI contract and recovery fixes plus the frozen
-ERR2984773 development benchmark. Checkpoint 3 remains open: its primary taxonomy
-gate failed, structural reference disagreements are unresolved, and elapsed
-measurements disagree. The benchmark omitted functional annotation and screening.
-Held-out biological validation, comparative-method simulations, browser review
-and independent user acceptance remain outstanding. Larger-database testing is
-deferred because of available hardware. Retain these limits in release notes;
-a reliability beta does not require claiming that stable-release gates passed.
+`2.0.0b3` ships the merged comparative-analysis safeguards from PR #34. It rejects
+nonconstant tied CLR features when either group has fewer than 10 samples,
+checks independence/provenance/profile contracts and retains complete methods in
+reports. Constant pooled features retain p=1; untied studies require at least
+three samples per group. No permutation or batch-adjusted model is introduced.
+The [statistical audit](comparison-validation.md) retains the original b2
+calibration failures and the limits of its synthetic/exact calculations.
+
+Checkpoint 3 remains open: its primary taxonomy gate failed, structural reference
+disagreements and elapsed measurements are unresolved, and the benchmark omitted
+functional annotation and screening. Held-out biological validation, browser/data
+review and independent user acceptance remain outstanding. Larger-database testing
+is deferred because of available hardware. This corrective beta carries an
+existing report layout; it does not claim the checkpoint-5 browser gate passed.
+Retain these limits in release notes rather than implying stable-release gates
+are complete.
 
 ## Production release
 
@@ -110,7 +118,7 @@ a reliability beta does not require claiming that stable-release gates passed.
    corresponding changelog entry.
 2. Merge the release preparation PR after all required checks pass.
 3. Create a signed or annotated tag with the same canonical version prefixed by
-   `v`, for example `v2.0.0b2`.
+   `v`, for example `v2.0.0b3`.
 4. Create and publish a GitHub Release from that tag. Mark beta releases as
    prereleases; the upload workflow checks that this flag matches the package version.
 5. Complete any configured `pypi` environment approval. The current production

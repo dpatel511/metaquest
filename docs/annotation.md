@@ -1,7 +1,7 @@
 # Gene prediction and functional annotation
 
 This document describes the maintained annotation boundary in
-MetaQuest `2.0.0b2`.
+MetaQuest `2.0.0b3`.
 
 ## Current stage
 

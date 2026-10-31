@@ -1,9 +1,15 @@
 # Comparative-analysis validation
 
 Checkpoint 4 evaluates the existing exploratory CLR/Mann–Whitney method for
-**two independent groups**. This is an unreleased audit after `2.0.0b2`;
-public PyPI artifacts are unchanged. It does not introduce a new statistical
-model or establish biological differential-abundance accuracy.
+**two independent groups**. Its safeguards are included in `2.0.0b3` after the
+audit of `2.0.0b2`; original b2 artifacts are unchanged. It does not introduce a
+new statistical model or establish biological differential-abundance accuracy.
+The audit merged in [PR #34](https://github.com/dpatel511/metaquest/pull/34) and
+passed [main CI](https://github.com/dpatel511/metaquest/actions/runs/41244598939),
+including 282 native tests without skips. Frozen protocols preserve their
+original prospective wording and hashes. Git attributes keep the three frozen
+protocol files on LF line endings across platforms; beta 3 restores their exact
+recorded byte identities when a Windows checkout previously converted them.
 
 ## Frozen experiment
 
@@ -119,7 +125,7 @@ median test requires additional distributional assumptions. The existing SciPy
 otherwise it uses a tie-corrected normal approximation with continuity correction.
 A supplemental exact two-point null calculation exposed miscalibration of that
 approximation with 3 versus 30 tied samples: the public beta reaches 8.21% FDR
-at nominal 5% under BH in one declared population. The candidate therefore
+at nominal 5% under BH in one declared population. Beta 3 therefore
 **rejects nonconstant tied CLR values if either group has fewer than 10 samples**,
 with an actionable permutation-test message. No features are silently discarded.
 All-pooled-constant features still receive p=1; untied small studies retain the
@@ -134,7 +140,7 @@ binomial count pairs for two-point profiles, across six group-size designs and
 nine population probabilities. Its planning text overcounted the state total;
 there are 374 actual count-pair states, not 474. All 108 population/correction
 calculations are retained. Reproduce with the intended installed package (run
-outside its source tree) or `PYTHONPATH=src` for the audit candidate:
+outside its source tree) or `PYTHONPATH=src` for the corresponding source checkout:
 
 ```bash
 python /path/to/metaquest/tools/benchmark_comparison_ties.py \
@@ -142,7 +148,7 @@ python /path/to/metaquest/tools/benchmark_comparison_ties.py \
   --output tied-null.json
 ```
 
-The unchanged public `2.0.0b2` wheel reproduces four failed BH cases. The candidate
+The unchanged public `2.0.0b2` wheel reproduces four failed BH cases. Beta 3
 blocks the unsupported nonconstant small/tied states and reports their probability
 mass as unsupported, **not as zero FDR**. Fully supported cases are reported
 separately. The main sparse Monte Carlo model contained zeros but no transformed
