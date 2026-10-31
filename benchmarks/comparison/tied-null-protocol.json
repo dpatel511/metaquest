@@ -1,0 +1,54 @@
+{
+  "protocol_version": 1,
+  "role": "prospective supplemental exact null calculation, added after the main sparse-CLR run showed zero transformed ties; original protocol unchanged",
+  "n_comparison_reference": [
+    [
+      3,
+      3
+    ],
+    [
+      3,
+      5
+    ],
+    [
+      3,
+      9
+    ],
+    [
+      3,
+      30
+    ],
+    [
+      6,
+      6
+    ],
+    [
+      10,
+      10
+    ]
+  ],
+  "population_probabilities": [
+    0.01,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    0.9,
+    0.95,
+    0.99
+  ],
+  "population": "Each independent sample has f0=0.1 or 0.9 with common Bernoulli probability p, f1=1-f0; both CLR distribution nulls hold.",
+  "calculation": "Enumerate counts of high-state samples in each group, weight rejection by independent binomial probabilities; this is an exact population calculation, not Monte Carlo.",
+  "settings": {
+    "pseudocount": 1e-06,
+    "min_prevalence": 0.1,
+    "alpha": 0.05,
+    "methods": [
+      "by",
+      "bh"
+    ]
+  },
+  "screen": "Flag any exact global-null FDR exceeding 0.05+1e-12; retain all failures without selecting a favorable probability or sample-size configuration.",
+  "resources": "474 count-pair states, two correction methods, two features; target under one minute and under 1 GB; no databases."
+}

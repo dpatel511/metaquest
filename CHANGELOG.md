@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Audit independent-group comparisons: reject shared input files and repeated
+  subjects hidden by whitespace, incompatible Bracken models/preprocessing,
+  malformed profiles and nonempty comparison outputs; reconcile taxonomic
+  counts and preserve explicit transformation/design settings in text reports.
+- Add frozen null/effect simulations and independent CLR, U-test, FDR, ID-join
+  and uncertainty checks. Retain small-sample/tie, compositional and design limits;
+  public 2.0.0b2 artifacts are unchanged. Reject nonconstant tied CLR studies
+  below 10 samples per group after an exact null calculation exposed small-sample
+  asymptotic miscalibration; preserve the failed public-beta results.
+
 ## [2.0.0b2] — 2026-10-30
 
 Reliability beta with CLI and recovery fixes plus a reproducible development

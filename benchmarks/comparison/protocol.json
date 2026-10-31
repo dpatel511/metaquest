@@ -1,0 +1,75 @@
+{
+  "protocol_version": 1,
+  "role": "checkpoint 4 synthetic calculation and Monte Carlo validation; not biological replicates or held-out community data",
+  "source_revision": "cd1050fc8a6f9c1fe7766a42e3dacd3337e03bce",
+  "replicates_per_scenario": 500,
+  "features": 24,
+  "rng": "NumPy Generator PCG64; independent SeedSequence([scenario_seed, replicate_index]) per study; methods share each study",
+  "parameters": {
+    "pseudocount": 1e-06,
+    "min_prevalence": 0.1,
+    "alpha": 0.05,
+    "fdr_methods": [
+      "by",
+      "bh"
+    ],
+    "reference_group": "control"
+  },
+  "scenarios": [
+    {
+      "name": "dense_null",
+      "seed": 2026103101,
+      "n_reference": 12,
+      "n_comparison": 12,
+      "generator": "independent bounded latent log coordinates Uniform(-1,1); inverse additive-pseudocount closure; all CLR distribution nulls true"
+    },
+    {
+      "name": "unbalanced_null",
+      "seed": 2026103102,
+      "n_reference": 6,
+      "n_comparison": 18,
+      "generator": "same exchangeable dense-null population, unequal group sizes"
+    },
+    {
+      "name": "sparse_null",
+      "seed": 2026103103,
+      "n_reference": 6,
+      "n_comparison": 6,
+      "generator": "independent log weights Uniform(-2,2), 0.65 independent dropout except first two features; multinomial depth 1000 drawn from normalized surviving weights; identical population in both groups"
+    },
+    {
+      "name": "balanced_clr_effect",
+      "seed": 2026103104,
+      "n_reference": 24,
+      "n_comparison": 24,
+      "generator": "independent bounded log coordinates Uniform(-1,1); comparison shifts +1 and -1 in features f00/f01, zero-sum; inverse additive-pseudocount closure makes production CLR truth exact",
+      "changed_features": {
+        "f00": 1.0,
+        "f01": -1.0
+      }
+    }
+  ],
+  "inverse_closure": "Let w=softmax(z); observed proportions=(1+D*pseudocount)*w-pseudocount. Bounded z guarantees positivity; clr(observed+pseudocount)=z-mean(z). No production CLR code is used by the generator.",
+  "null_metrics": "Under the global null FDR=Pr(any FDR discoveries). Report events/500 and two-sided 95% Wilson interval; no per-feature independence assumption.",
+  "effect_metrics": "Per-study FDP=false discoveries/max(all discoveries,1), recall=detected changed features/2; report mean, Monte Carlo SE, and one-sided 95% Hoeffding bounds over independent studies. Direction success requires both known target signs correct, with 95% Wilson interval.",
+  "acceptance_limits": {
+    "null_wilson_upper_max": 0.08,
+    "effect_fdp_hoeffding_upper_max": 0.1,
+    "effect_recall_hoeffding_lower_min": 0.8,
+    "effect_direction_wilson_lower_min": 0.95,
+    "interpretation": "Proposed project screening criteria with declared Monte Carlo margins; these do not prove nominal 5% FDR control for all datasets. Report nominal alpha and empirical estimates even if a screening criterion passes."
+  },
+  "resource_plan": "No external reads/databases; 2000 small synthetic studies evaluated with both methods; arrays at most 48x24, target under 10 minutes and under 1 GB RAM on the laptop. Retain actual resources without claiming controlled performance.",
+  "sensitivity_checks": "Predeclared descriptive (no pass/fail accuracy claim): rerun the balanced CLR-effect inputs under pseudocount 1e-4 and min_prevalence 0.5; run sparse-null inputs under pseudocount 1e-4 for first 50 replicates. Do not relabel changed CLR hypotheses as fixed effect truth.",
+  "independent_calculation_checks": "Enumerate small-sample U permutations including ties; check a documented SciPy reference example, independent step-up BH/BY values, CLR log-ratios, prevalence reference changes, group reversal and sample/feature reorder invariance.",
+  "sources": [
+    "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html",
+    "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html",
+    "https://doi.org/10.3389/fmicb.2017.02224"
+  ],
+  "limits": [
+    "No pairing, covariate/batch adjustment, causal effects, biological sensitivity/specificity or absolute abundance truth.",
+    "Small samples and ties use the existing SciPy auto exact/asymptotic policy; report limitations.",
+    "Public 2.0.0b2 artifacts remain unchanged; this branch is an unreleased audit candidate."
+  ]
+}
