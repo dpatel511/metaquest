@@ -18,7 +18,7 @@ def _native(value: Any) -> Any:
 
 def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 20) -> tuple[dict[str, Any], str]:
     bracken_file = classification.bracken_file
-    table = pd.read_csv(bracken_file, sep="\t")
+    table = pd.read_csv(bracken_file, sep="\t", dtype={"taxonomy_id": str})
     required = {"name", "new_est_reads"}
     missing = required.difference(table.columns)
     if missing:
@@ -35,6 +35,7 @@ def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 
         top.append(
             {
                 "name": str(row["name"]),
+                "taxonomy_id": str(row["taxonomy_id"]) if "taxonomy_id" in table else None,
                 "estimated_reads": int(row["new_est_reads"]),
                 "estimated_count": int(row["new_est_reads"]),
                 "fraction_species_assigned_reads": (
@@ -322,7 +323,7 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
     sections = []
     stage_links = "".join(
         f'<tr><td><a href="{html.escape(item["html"], quote=True)}">{html.escape(item["stage"])}</a></td>'
-        f'<td>{html.escape(item["status"])}</td></tr>' for item in summary.get("stage_reports", [])
+        f'<td class="workflow-status">{html.escape(item["status"])}</td></tr>' for item in summary.get("stage_reports", [])
     )
     sections.append('<section><h2>Workflow evidence</h2><table><tr><th>Step report</th><th>Status</th></tr>' + stage_links + '</table></section>')
     validation = summary.get("validation", {})

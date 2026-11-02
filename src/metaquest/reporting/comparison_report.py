@@ -1,6 +1,7 @@
 """Descriptive cohort graphics and explicitly labeled group-test outputs."""
 
 import html
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -15,10 +16,16 @@ def write_comparison_report(output, relative, labels, qc, distances, tests, summ
     plots.mkdir(exist_ok=True)
     _style("colorblind")
     images = []
+    label_counts = Counter(labels.get(key, key) for key in relative.columns)
+    display_labels = {key: f"{labels.get(key, key)} [{key}]" if label_counts[labels.get(key, key)] > 1
+                      else labels.get(key, key) for key in relative.columns}
     top = relative.mean().nlargest(10).index
     composition = relative.loc[:, top].copy()
     composition["Other features"] = (1 - composition.sum(axis=1)).clip(lower=0)
-    composition.columns = [labels.get(key, key) for key in composition.columns]
+    composition.to_csv(plots / "composition_by_id.tsv", sep="\t", index_label="sample_id")
+    display_names = Counter(display_labels.get(key, key) for key in composition.columns)
+    composition.columns = [f"{display_labels.get(key, key)} [{key}]" if display_names[display_labels.get(key, key)] > 1
+                           else display_labels.get(key, key) for key in composition.columns]
     fig, ax = plt.subplots(figsize=(max(7.5, len(relative) * .55), 5))
     composition.plot.bar(stacked=True, ax=ax, colormap="tab20", width=.8)
     ax.set(xlabel="Sample", ylabel="Fraction of reported profile total", ylim=(0, 1),
@@ -35,7 +42,7 @@ def write_comparison_report(output, relative, labels, qc, distances, tests, summ
     images.append(figure_html(plots / "bray_curtis.svg", "Descriptive distances; no group significance is inferred from this heatmap."))
     heatmap = relative.loc[:, relative.mean().nlargest(20).index].T
     fig, ax = plt.subplots(figsize=(max(6, len(relative) * .5), max(4, len(heatmap) * .28)))
-    sns.heatmap(heatmap, cmap="viridis", ax=ax, yticklabels=[labels.get(key, key) for key in heatmap.index],
+    sns.heatmap(heatmap, cmap="viridis", ax=ax, yticklabels=[display_labels.get(key, key) for key in heatmap.index],
                 cbar_kws={"label": "Relative profile abundance"})
     ax.set(title="Dominant features", xlabel="Sample", ylabel="Feature")
     heatmap.to_csv(plots / "feature_heatmap.tsv", sep="\t", index_label="feature_id")
@@ -55,7 +62,7 @@ def write_comparison_report(output, relative, labels, qc, distances, tests, summ
         fig, ax = plt.subplots(figsize=(8, max(4, len(effect) * .28)))
         colors = ["#177d8d" if value else "#b9c7cd" for value in effect["passes_fdr"]]
         ax.barh(range(len(effect)), effect["median_clr_difference"], color=colors)
-        ax.set_yticks(range(len(effect)), effect["label"])
+        ax.set_yticks(range(len(effect)), [display_labels.get(key, key) for key in effect["feature_id"]])
         ax.invert_yaxis()
         ax.axvline(0, color="#526779", linewidth=.8)
         ax.set(xlabel="Median CLR difference (comparison − reference)", ylabel="Feature",
