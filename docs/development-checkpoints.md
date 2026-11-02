@@ -195,7 +195,7 @@ Pass criteria:
 
 Verification: run the [acceptance checker](acceptance.md), then inspect actual
 HTML in Firefox and Chromium at desktop/narrow widths and print preview. Retain
-screenshots and browser versions. Browser rendering is still an open checkpoint.
+screenshots and browser versions. The [2026-11-02 local audit](report-audit.md) records implemented fixes, source/wheel tests and actual two-engine screenshots. See [data contracts](report-data-contracts.md). Native printer/pagination and independent user review remain outstanding; the local evidence is scoped to its recorded cases.
 
 Pass criteria:
 

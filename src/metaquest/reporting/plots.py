@@ -134,9 +134,14 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
         ]
         top_count = sum(row["estimated_count"] for row in visible_rows)
         total = taxonomy["total_input"]
+        names = Counter(row["name"] for row in visible_rows)
+        remainder_labels = {"Other species-assigned", "Classified above species", "Unclassified"}
         plot_rows = [
-            {"taxon": row["name"], "percent_all_input": row["fraction_all_input"] * 100}
-            for row in visible_rows
+            {"taxon": (f"{row['name']} [{row.get('taxonomy_id') or position}]"
+                       if names[row["name"]] > 1 or row["name"] in remainder_labels else row["name"]),
+             "taxonomy_id": row.get("taxonomy_id"),
+             "percent_all_input": row["fraction_all_input"] * 100}
+            for position, row in enumerate(visible_rows, 1)
         ]
         other_species = max(0, taxonomy["species_assigned"] - top_count)
         classified_above = taxonomy["classified_above_species"]

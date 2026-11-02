@@ -17,6 +17,8 @@ section,figure{background:white;border:1px solid var(--line);border-radius:12px;
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px 12px;vertical-align:top;overflow-wrap:anywhere}
 th{background:#eff5f7}img{max-width:100%;height:auto;display:block;margin:auto}figcaption{color:var(--muted);margin-top:12px}
 pre{white-space:pre-wrap;overflow-wrap:anywhere}footer{color:var(--muted);padding:20px 0;font-size:12px}
+.workflow-status{white-space:nowrap}
+@media screen and (max-width:600px){main{padding:20px 14px}section{padding:16px}figure{padding:12px;overflow-x:auto}figure img{min-width:560px}}
 @media print{body{background:white}main{padding:0}section,figure{break-inside:avoid}nav{display:none}}
 """
 
