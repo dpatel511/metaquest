@@ -110,7 +110,7 @@ jobs:
         id: amr-version
         shell: bash -el {0}
         run: echo "version=$(amrfinder --version)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: test_results/ci-databases/amr
           key: amrfinderplus-${{ runner.os }}-${{ steps.amr-version.outputs.version }}-v1
