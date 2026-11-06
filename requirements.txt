@@ -4,7 +4,7 @@
 # use: conda env create -f environment/environment.yml
 
 # ── Core Data Science ────────────────────────────────────────────────────────
-numpy>=1.24
+numpy>=2.2.6
 pandas>=2.0
 matplotlib>=3.8
 seaborn>=0.13
