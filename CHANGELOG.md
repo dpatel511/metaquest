@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Reject unknown YAML sections/settings and malformed configuration structures
+  before dependency checks or analysis, with actionable configuration errors.
+  Valid partial overrides retain the bundled defaults; older files containing
+  ignored or unsupported keys must be corrected before reuse.
+
 ## [2.0.0b3] — 2026-10-31
 
 Corrective research beta for comparative-analysis safeguards. In a declared

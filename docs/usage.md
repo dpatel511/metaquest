@@ -29,6 +29,15 @@ warnings and errors use stderr; redirect them with `2>metaquest.stderr.log`.
 `--quiet` suppresses progress while preserving fatal errors. Colour and animation
 follow stderr's terminal status, and `--no-color` disables both explicitly.
 
+Configuration files must contain a YAML mapping of supported sections, with a
+mapping of setting names to values in each section. Partial overrides inherit
+the bundled defaults; an empty file uses all defaults. Unknown sections or
+settings, malformed YAML and non-mapping sections fail with a configuration
+error before dependency checks or analysis. Generate the supported keys with
+`metaquest init-config`. For example, `classification.confidence` is currently
+unsupported and is rejected rather than silently ignored. Remove unsupported
+keys from older configurations before rerunning; retain original run provenance.
+
 ## Check
 
 ~~~bash
