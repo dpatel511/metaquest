@@ -135,6 +135,29 @@ def test_packaged_config_can_be_written_outside_checkout(tmp_path):
     assert {"databases", "assembly", "annotation"} <= yaml.safe_load(config.read_text()).keys()
 
 
+@pytest.mark.parametrize("quiet", [False, True])
+@pytest.mark.parametrize("content, message", [
+    ("classification:\n  confidence: 0.5\n", "classification.confidence"),
+    ("classificaton:\n  threads: 2\n", "classificaton"),
+    ("classification: false\n", "classification"),
+    ("[broken", "Invalid YAML"),
+])
+def test_invalid_config_fails_before_dependency_checks(tmp_path, quiet, content, message):
+    config = tmp_path / "invalid config.yaml"
+    config.write_text(content, encoding="utf-8")
+    options = ["--quiet"] if quiet else ["--no-color"]
+
+    result = invoke(tmp_path, *options, "check", "--config", str(config),
+                    env_updates={"PATH": str(tmp_path / "no-tools")})
+
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert message in result.stderr
+    assert "Tool not found" not in result.stderr
+    assert "Unexpected error" not in result.stderr
+    assert "Traceback" not in result.stderr
+
+
 def test_debug_tool_output_stays_on_stderr_and_in_log(tmp_path, capsys):
     log = tmp_path / "metaquest.log"
     formatter = OutputFormatter("debug", log_file=log)

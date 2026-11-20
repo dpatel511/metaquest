@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import get_type_hints
 import yaml
 
 from metaquest.exceptions import ConfigError
@@ -147,10 +148,9 @@ def _build_databases_config(raw: dict, base_dir: Path) -> DatabasesConfig:
 
 
 def _build_section(cls, raw: dict, key: str):
-    """Build a frozen dataclass from a YAML section, ignoring unknown keys."""
+    """Build a frozen dataclass from a validated YAML section."""
     section = raw.get(key, {}) or {}
-    valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
-    filtered = {k: v for k, v in section.items() if k in valid_fields}
+    filtered = dict(section)
     if cls is ReportingConfig and "plot_formats" in filtered:
         filtered["plot_formats"] = tuple(filtered["plot_formats"])
     # Convert Path fields
@@ -159,6 +159,32 @@ def _build_section(cls, raw: dict, key: str):
             if fobj.type in ("Path", "Path | None"):
                 filtered[fname] = Path(filtered[fname])
     return cls(**filtered)
+
+
+def _read_config(path: Path) -> dict:
+    """Reject malformed documents and settings that would otherwise be ignored."""
+    try:
+        with path.open(encoding="utf-8") as handle:
+            raw = yaml.safe_load(handle)
+    except (OSError, UnicodeError) as exc:
+        raise ConfigError(f"Cannot read configuration {path}: {exc}") from exc
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"Invalid YAML in configuration {path}: {exc}") from exc
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ConfigError(f"Configuration {path} must contain a mapping of sections")
+    sections = get_type_hints(MetaQuestConfig)
+    for name, values in raw.items():
+        if name not in sections:
+            raise ConfigError(f"Unknown configuration section {name!r} in {path}")
+        if not isinstance(values, dict):
+            raise ConfigError(f"Configuration section {name!r} in {path} must be a mapping")
+        unknown = [str(key) for key in values if key not in sections[name].__dataclass_fields__]
+        if unknown:
+            keys = ", ".join(f"{name}.{key}" for key in unknown)
+            raise ConfigError(f"Unknown configuration setting(s) in {path}: {keys}")
+    return raw
 
 
 def load_config(
@@ -181,16 +207,14 @@ def load_config(
     if not _DEFAULT_CONFIG_PATH.exists():
         raise ConfigError(f"Default config missing: {_DEFAULT_CONFIG_PATH}")
 
-    with open(_DEFAULT_CONFIG_PATH) as f:
-        defaults = yaml.safe_load(f) or {}
+    defaults = _read_config(_DEFAULT_CONFIG_PATH)
 
     # Merge user config on top
     raw = dict(defaults)
     if config_path:
         if not config_path.exists():
             raise ConfigError(f"Config file not found: {config_path}")
-        with open(config_path) as f:
-            user = yaml.safe_load(f) or {}
+        user = _read_config(config_path)
         for key, val in user.items():
             if isinstance(val, dict) and key in raw and isinstance(raw[key], dict):
                 raw[key] = {**raw[key], **val}
