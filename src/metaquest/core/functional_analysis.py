@@ -379,6 +379,10 @@ def run_functional_annotation(
     ]
     log_path = output_dir / "eggnog_mapper.log"
     environment = os.environ.copy()
+    for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"):
+        environment.pop(key, None)
+    # The annotation scratch directory can itself be inside the caller's repository.
+    environment["GIT_CEILING_DIRECTORIES"] = str(output_dir)
     environment["PYTHONUNBUFFERED"] = "1"
     with tempfile.TemporaryDirectory(prefix=".emapper-tmp-", dir=output_dir) as temp_dir:
         with log_path.open("w", encoding="utf-8") as log:
