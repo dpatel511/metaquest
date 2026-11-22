@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## [2.0.0b4] — 2026-11-22 (unreleased)
+
+- Add versioned taxonomy evidence TSV/methods JSON outputs, joined by taxonomic ID,
+  with separate Kraken direct/clade counts and Bracken assigned/added estimates.
+  Expose them in stage and consolidated reports, including denominator, database
+  and tool provenance. Missing support remains unavailable rather than zero.
+- Validate taxonomy accounting and evidence joins. Use rank-aware Bracken labels
+  and describe the classified remainder without assuming it is above species;
+  retain existing JSON count aliases for compatibility. Classifier settings and
+  raw Kraken/Bracken outputs are unchanged.
 
 - Pin the corrected public eggNOG-mapper 2.1.15 Conda build and require Python
   dependency consistency in Conda CI. Document the reproduced metadata conflict,

@@ -1,5 +1,9 @@
 # MetaQuest
 
+Development target: **2.0.0b4 (unreleased)**. The published installation commands
+below remain pinned to beta 3. Beta 4 adds [auditable taxonomy evidence](docs/taxonomy-evidence.md);
+its tests and scoped benchmark do not establish improved biological accuracy.
+
 MetaQuest is a research-use command-line pipeline for short-read metagenomic
 FASTQ analysis. The `2.0.0b3` research beta provides a
 maintained workflow for profiling, assembly, annotation, abundance and reporting.

@@ -31,7 +31,16 @@ effective settings, input hashes, tool/database identity and run status.
   `percent_all_input` (0–100). Remainder rows have no taxonomy ID. Repeated
   display names include IDs to prevent categorical aggregation; never use the
   label as a join key. Other species, above-species and unclassified remainders
-  make the displayed percentages sum to 100 for nonempty inputs.
+  make the displayed percentages sum to 100 for nonempty inputs. Remainders are
+  labelled other Bracken-assigned taxa, classified outside the Bracken profile,
+  and unclassified; filtered taxa need not be above the requested rank.
+- Taxonomy evidence schema 1 adds `taxonomy_evidence.tsv` (the full reported
+  Bracken profile), `taxonomy_methods.json`, `evidence_schema_version`,
+  `taxonomic_level`, `rank_assigned` and `classified_not_in_bracken`. The existing
+  `species_assigned*` and `classified_above_species` keys remain numeric aliases;
+  their names do not establish a species rank or the reason for unallocated counts.
+  See [field definitions and validation](taxonomy-evidence.md). This is additive;
+  raw classifier tables and comparison input profiles are unchanged.
 - fastp totals and retention refer to individual reads, including in paired
   mode. Q20/Q30 are fractions of bases in JSON; plot TSVs use percentages.
   Validation sampling indicators and analyzed counts accompany sample estimates.

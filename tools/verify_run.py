@@ -7,6 +7,7 @@ Run this with the installed MetaQuest environment, including Biopython.
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 from html.parser import HTMLParser
@@ -41,6 +42,48 @@ class ReportLinks(HTMLParser):
             self.images.append(attrs.get("src", ""))
 
 
+def verify_taxonomy_evidence(root, taxonomy):
+    """Cross-check the evidence independently against the native source tables."""
+    methods = json.loads((root / "taxonomy_methods.json").read_text())
+    require(methods["schema_version"] == taxonomy["evidence_schema_version"] == 1,
+            "Unsupported taxonomy evidence schema")
+    original = {item["taxonomy_id"]: item for item in rows(root / "bracken_report.tsv")}
+    evidence = list(rows(root / "taxonomy_evidence.tsv"))
+    require(len(evidence) == len(original) and {item["taxonomy_id"] for item in evidence} == set(original),
+            "Taxonomy evidence ID join differs from Bracken")
+    kraken = {}
+    with (root / "kraken_report.txt").open() as handle:
+        for line in handle:
+            fields = line.rstrip("\n").split("\t")
+            require(len(fields) == 6 and fields[4] not in kraken, "Malformed or duplicate Kraken row")
+            kraken[fields[4]] = fields
+    total = int(kraken.get("0", [0, 0])[1]) + int(kraken.get("1", [0, 0])[1])
+    profile = sum(int(item["new_est_reads"]) for item in original.values())
+    require(total == taxonomy["total_input"] and profile == taxonomy["rank_assigned"],
+            "Taxonomy evidence denominators disagree with source counts")
+    for item in evidence:
+        source = original[item["taxonomy_id"]]
+        support = kraken.get(item["taxonomy_id"])
+        expected = {"kraken_direct_count": support[2] if support else "",
+                    "kraken_clade_count": support[1] if support else "",
+                    "bracken_assigned_count": source.get("kraken_assigned_reads", ""),
+                    "bracken_added_count": source.get("added_reads", ""),
+                    "bracken_estimated_count": source["new_est_reads"]}
+        require(all(item[key] == value for key, value in expected.items()), "Taxonomy evidence support counts differ")
+        require(item["count_unit"] == taxonomy["count_unit"]
+                and item["rank"] == source["taxonomy_lvl"] == methods["taxonomic_level"],
+                "Taxonomy evidence rank or count unit differs")
+        for name, denominator in (("fraction_all_input", total), ("fraction_bracken_profile", profile)):
+            require(methods["denominators"][name] == denominator, "Taxonomy method denominator differs")
+            value = item[name]
+            require(math.isclose(float(value), int(source["new_est_reads"]) / denominator, abs_tol=1e-12)
+                    if denominator else value == "", "Taxonomy evidence fraction differs")
+    for key, name in (("kraken_report", "kraken_report.txt"), ("bracken_report", "bracken_report.tsv")):
+        digest = hashlib.sha256((root / name).read_bytes()).hexdigest()
+        require(methods["sources"][key]["sha256"] == digest, "Taxonomy evidence source hash differs")
+    return len(evidence)
+
+
 def verify(root):
     root = root.resolve()
     metadata = json.loads((root / "analysis_metadata.json").read_text())
@@ -56,6 +99,8 @@ def verify(root):
             "Bracken counts disagree with summary")
     require(0 <= taxonomy["species_assigned"] <= taxonomy["kraken_classified"] <= total,
             "Taxonomy counts exceed their input denominator")
+    if "evidence_schema_version" in taxonomy:
+        verify_taxonomy_evidence(root, taxonomy)
     genes = set()
     if "gene_prediction" in summary:
         proteins = list(record.id for record in SeqIO.parse(root / "gene_prediction/genes.faa", "fasta"))

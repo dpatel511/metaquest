@@ -16,10 +16,13 @@ section,figure{background:white;border:1px solid var(--line);border-radius:12px;
 .note{padding:14px 18px;border-left:4px solid #c79334;background:#fff9e9}.scroll{overflow:auto}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px 12px;vertical-align:top;overflow-wrap:anywhere}
 th{background:#eff5f7}img{max-width:100%;height:auto;display:block;margin:auto}figcaption{color:var(--muted);margin-top:12px}
+.taxonomy-evidence{min-width:1000px}.taxonomy-evidence th,.taxonomy-evidence td{overflow-wrap:normal}
+.taxonomy-evidence td:not(:nth-child(2)){white-space:nowrap}
 pre{white-space:pre-wrap;overflow-wrap:anywhere}footer{color:var(--muted);padding:20px 0;font-size:12px}
 .workflow-status{white-space:nowrap}
 @media screen and (max-width:600px){main{padding:20px 14px}section{padding:16px}figure{padding:12px;overflow-x:auto}figure img{min-width:560px}}
 @media print{body{background:white}main{padding:0}section,figure{break-inside:avoid}nav{display:none}}
+@media print{.taxonomy-evidence{min-width:0;font-size:9px}.taxonomy-evidence th,.taxonomy-evidence td{padding:5px 3px}}
 """
 
 

@@ -1,0 +1,18 @@
+{
+  "protocol_version": 1,
+  "role": "Previously used ERR2984773 development subset; not held out and not the full-input benchmark",
+  "baseline_revision": "757e387d6a107f161ca4afc872d81280b2ef80fa",
+  "candidate_version": "2.0.0b4",
+  "dataset_source": "https://doi.org/10.1093/gigascience/giz043",
+  "license": "CC-BY-4.0; Nicholls et al. 2019",
+  "raw_read_pairs": 200000,
+  "subset_generation": "Existing development subset; its original selection procedure was not reconstructed",
+  "inputs": [
+    {"path": "test_data/zymo_even/subsampled/zymo_even_R1.fastq.gz", "bytes": 21077179, "sha256": "f8134b9227087cc3f6cb83a0d9e90addf62b6700b73587292a361aa5af9f8b01"},
+    {"path": "test_data/zymo_even/subsampled/zymo_even_R2.fastq.gz", "bytes": 23497388, "sha256": "72391d05c5244970373ea6409e1bcda0f2f78933d3147943778c765ac5412208"}
+  ],
+  "taxonomy_database": {"release": "2026-06-26", "collection": "Standard-8", "archive_md5": "7685f43cce057c2ca18511c925399b72", "fungi_included": false},
+  "native_comparison": {"runs_per_revision": 1, "threads": 4, "memory_mapping": true, "workflow": "taxonomy-only", "config": "benchmarks/zymo-even/config.yaml", "acceptance": "Byte-identical Kraken report and Bracken table; no classifier/default changes"},
+  "reporting_comparison": {"repetitions_per_revision": 3, "source": "Same completed baseline run", "timers": ["perf_counter_ns elapsed seconds", "process_time_ns CPU seconds"], "rss_unit": "Linux KiB; process-lifetime high-water mark", "budget": "candidate median <= max(2 * baseline median, baseline median + 1 second)", "interpretation": "Shared WSL host; retain raw timers, no speedup claim"},
+  "biological_context": {"truth": "benchmarks/zymo-even/protocol.json expected_members", "primary_threshold": 0.001, "denominator": "all cleaned paired fragments", "minimum_community_precision": 0.9, "minimum_bacterial_recall": 1.0, "interpretation": "Descriptive nominal-composition score on a reused subset; not replacement of the frozen full-input benchmark"}
+}

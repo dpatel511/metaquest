@@ -95,6 +95,13 @@ to force compatibility. Keep original output directories intact.
 
 ## Beta 3 scope and residual limits
 
+The source tree now prepares beta 4 (`2.0.0b4`), adding taxonomy evidence schema 1
+and retaining the reliability fixes recorded in the changelog. This is not a
+publication notice. Require the existing release gates and review the
+[taxonomy evidence validation](taxonomy-evidence.md) before tagging/publishing.
+The beta-3 benchmark and statistical evidence below remain historical results;
+the reporting changes do not close their biological validation limits.
+
 `2.0.0b3` ships the merged comparative-analysis safeguards from PR #34. It rejects
 nonconstant tied CLR features when either group has fewer than 10 samples,
 checks independence/provenance/profile contracts and retains complete methods in

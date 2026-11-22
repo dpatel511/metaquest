@@ -857,7 +857,9 @@ def main():
                     f"{taxonomy.get('classification_rate', 0):.2%}"
                 )
                 unit = 'reads' if args.single else 'fragments'
-                metrics[f'Species-assigned {unit}'] = (
+                from .reporting.taxonomy import RANK_NAMES
+                rank = taxonomy.get('taxonomic_level', 'S')
+                metrics[f'Bracken-assigned {RANK_NAMES.get(rank, rank)} {unit}'] = (
                     f"{taxonomy.get('species_assigned_reads', 0):,}"
                 )
             preprocessing = summary.get('preprocessing', {})
