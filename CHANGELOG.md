@@ -2,6 +2,9 @@
 
 ## [2.0.0b4] — 2026-11-22 (unreleased)
 
+- Isolate the eggNOG annotation process from the output repository's Git identity,
+  including inherited Git paths, so native logs and annotation headers agree
+  with the isolated version probe.
 - Add versioned taxonomy evidence TSV/methods JSON outputs, joined by taxonomic ID,
   with separate Kraken direct/clade counts and Bracken assigned/added estimates.
   Expose them in stage and consolidated reports, including denominator, database
