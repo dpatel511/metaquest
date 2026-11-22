@@ -52,6 +52,15 @@ def write_step_reports(output: Path, summary: dict) -> list[dict]:
         sections = [("Stage status", f"<p>{html.escape(status)}</p><p><a href='../analysis_metadata.json'>Run provenance and settings</a> · <a href='../report.html'>Consolidated report</a></p>"),
                     ("Recorded evidence", '<div class="scroll">' + frame.head(150).to_html(index=False, escape=True) + '</div>'
                      + '<p>Showing up to 150 metrics; the companion TSV and JSON contain the full record.</p>')]
+        if key == "taxonomy" and data and data.get("evidence_table"):
+            from metaquest.reporting.taxonomy import evidence_html
+            # Legacy aliases remain in JSON/TSV; show canonical rank-neutral counts in HTML.
+            canonical = {name: data[name] for name in ("count_unit", "taxonomic_level", "total_input",
+                         "kraken_classified", "rank_assigned", "classified_not_in_bracken",
+                         "classified_fraction", "unclassified_fraction")}
+            canonical["unclassified"] = data["unclassified_reads"]
+            sections[1] = ("Recorded evidence", pd.DataFrame(_metric_rows(canonical)).to_html(index=False, escape=True))
+            sections.append(("Taxon evidence", evidence_html(output, data, prefix="../")))
         if key == "screening" and data:
             for title, path in (("Taxonomic candidates", "taxon_table"), ("Protein evidence", "protein_table")):
                 table = pd.read_csv(output / data[path], sep="\t", keep_default_na=False)

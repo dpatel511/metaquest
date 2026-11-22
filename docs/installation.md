@@ -2,6 +2,11 @@
 
 This guide covers the MetaQuest `2.0.0b3` research beta.
 
+The current source checkout prepares `2.0.0b4`; that version has not been published.
+The index/tag commands below install the published beta 3. To test the prepared
+version, build a wheel with `python -m build`, install that wheel with `--no-deps`
+inside the complete environment, and verify `metaquest --version` and `pip check`.
+
 ## Supported environment
 
 - Linux or WSL2

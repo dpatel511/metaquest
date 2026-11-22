@@ -135,7 +135,7 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
         top_count = sum(row["estimated_count"] for row in visible_rows)
         total = taxonomy["total_input"]
         names = Counter(row["name"] for row in visible_rows)
-        remainder_labels = {"Other species-assigned", "Classified above species", "Unclassified"}
+        remainder_labels = {"Other Bracken-assigned taxa", "Classified outside Bracken profile", "Unclassified"}
         plot_rows = [
             {"taxon": (f"{row['name']} [{row.get('taxonomy_id') or position}]"
                        if names[row["name"]] > 1 or row["name"] in remainder_labels else row["name"]),
@@ -146,8 +146,8 @@ def generate_plots(ctx, taxonomy: dict | None) -> list[Path]:
         other_species = max(0, taxonomy["species_assigned"] - top_count)
         classified_above = taxonomy["classified_above_species"]
         for label, count in (
-            ("Other species-assigned", other_species),
-            ("Classified above species", classified_above),
+            ("Other Bracken-assigned taxa", other_species),
+            ("Classified outside Bracken profile", classified_above),
             ("Unclassified", taxonomy["unclassified_reads"]),
         ):
             if count:

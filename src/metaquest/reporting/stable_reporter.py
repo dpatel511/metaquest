@@ -8,6 +8,8 @@ from typing import Any
 
 import pandas as pd
 
+from metaquest.reporting.taxonomy import RANK_NAMES, build_evidence, evidence_html, write_methods
+
 
 def _native(value: Any) -> Any:
     """Convert pandas/numpy scalar values into JSON-compatible values."""
@@ -16,9 +18,9 @@ def _native(value: Any) -> Any:
     return value.item() if hasattr(value, "item") else value
 
 
-def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 20) -> tuple[dict[str, Any], str]:
+def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 20, level: str = "S"):
     bracken_file = classification.bracken_file
-    table = pd.read_csv(bracken_file, sep="\t", dtype={"taxonomy_id": str})
+    table = pd.read_csv(bracken_file, sep="\t", dtype=str, keep_default_na=False)
     required = {"name", "new_est_reads"}
     missing = required.difference(table.columns)
     if missing:
@@ -29,15 +31,20 @@ def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 
     species_assigned = classification.species_assigned_reads
     total_reads = classification.total_reads
     denominator_label = "fragments" if paired else "reads"
+    evidence = build_evidence(table, classification, denominator_label, level)
+    table["new_est_reads"] = evidence["bracken_estimated_count"].to_numpy()
     table = table.sort_values("new_est_reads", ascending=False)
+    evidence = evidence.loc[table.index].reset_index(drop=True)
     top = []
-    for _, row in table.head(top_limit).iterrows():
+    for (_, row), (_, support) in zip(table.head(top_limit).iterrows(), evidence.head(top_limit).iterrows()):
         top.append(
             {
                 "name": str(row["name"]),
                 "taxonomy_id": str(row["taxonomy_id"]) if "taxonomy_id" in table else None,
                 "estimated_reads": int(row["new_est_reads"]),
                 "estimated_count": int(row["new_est_reads"]),
+                **{key: _native(support[key]) for key in (
+                    "kraken_direct_count", "kraken_clade_count", "bracken_assigned_count", "bracken_added_count")},
                 "fraction_species_assigned_reads": (
                     int(row["new_est_reads"]) / species_assigned if species_assigned else 0.0
                 ),
@@ -54,6 +61,10 @@ def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 
         )
 
     summary = {
+        "evidence_schema_version": 1,
+        "evidence_table": "taxonomy_evidence.tsv",
+        "methods_file": "taxonomy_methods.json",
+        "taxonomic_level": level,
         "reported_taxa": int(len(table)),
         "count_unit": denominator_label,
         "total_input": total_reads,
@@ -66,9 +77,11 @@ def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 
         ),
         "species_assigned_reads": species_assigned,
         "species_assigned": species_assigned,
-        "classified_above_species": max(
-            0, classification.kraken_classified_reads - species_assigned
-        ),
+        "rank_assigned": species_assigned,
+        "classified_not_in_bracken": classification.kraken_classified_reads - species_assigned,
+        "classified_above_species": classification.kraken_classified_reads - species_assigned,
+        "unclassified_fraction": classification.unclassified_reads / total_reads if total_reads else None,
+        "classified_fraction": classification.kraken_classified_reads / total_reads if total_reads else None,
         "observed_read_length": classification.observed_read_length,
         "bracken_read_length": classification.bracken_read_length,
         "top_taxa": top,
@@ -83,14 +96,15 @@ def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 
         f"Total cleaned input {denominator_label}: {summary['total_input_reads']}",
         f"Kraken-classified {denominator_label}: {summary['kraken_classified_reads']}",
         f"Unclassified {denominator_label}: {summary['unclassified_reads']}",
-        f"Classification rate: {summary['classification_rate']:.2%}",
-        f"Species-assigned {denominator_label}: {summary['species_assigned_reads']}",
+        f"Classification rate: {summary['classification_rate']:.2%}" if total_reads else "Classification rate: unavailable",
+        f"Bracken-assigned {RANK_NAMES.get(level, level)} {denominator_label}: {species_assigned}",
+        f"Classified outside the Bracken profile: {summary['classified_not_in_bracken']}",
         f"Observed read length: {summary['observed_read_length']} bp",
         f"Bracken model length: {summary['bracken_read_length']} bp",
         "",
         "Top taxa",
         "--------",
-        f"Taxon\tEstimated {denominator_label}\tFraction species-assigned\tFraction all input",
+        f"Taxon\tBracken estimated {denominator_label}\tFraction Bracken profile\tFraction all input",
     ]
     lines.extend(
         f"{item['name']}\t{item['estimated_reads']}\t"
@@ -105,9 +119,12 @@ def _taxonomy_summary(classification, *, paired: bool = False, top_limit: int = 
             "-------------------",
             "These are computational taxonomic abundance estimates from Kraken2/Bracken.",
             "They are research outputs and do not establish pathogenicity or clinical risk.",
+            "Kraken direct/clade support and Bracken assigned/added estimates: taxonomy_evidence.tsv.",
+            "Recorded methods, database identity and source hashes: taxonomy_methods.json.",
+            "The classified remainder can include filtered taxa as well as higher ranks.",
         ]
     )
-    return summary, "\n".join(lines) + "\n"
+    return summary, "\n".join(lines) + "\n", evidence
 
 
 def generate_stable_reports(ctx) -> None:
@@ -122,11 +139,15 @@ def generate_stable_reports(ctx) -> None:
 
     if ctx.classification:
         reporting_config = getattr(getattr(ctx, "config", None), "reporting", None)
-        taxonomy, report = _taxonomy_summary(
+        classification_config = getattr(getattr(ctx, "config", None), "classification", None)
+        taxonomy, report, evidence = _taxonomy_summary(
             ctx.classification,
             paired=getattr(ctx, "read_mode", "single") != "single",
             top_limit=getattr(reporting_config, "top_taxa", 20),
+            level=getattr(classification_config, "taxonomic_level", "S"),
         )
+        evidence.to_csv(output_dir / taxonomy["evidence_table"], sep="\t", index=False)
+        taxonomy["methods"] = write_methods(ctx, evidence, taxonomy["count_unit"], taxonomy["taxonomic_level"])
         summary["taxonomy"] = taxonomy
         (output_dir / "01_taxonomic_report.txt").write_text(report, encoding="utf-8")
 
@@ -354,12 +375,12 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
         rows = [
             (f"Cleaned input {unit}", f"{taxonomy['total_input']:,}"),
             (f"Kraken-classified {unit}", f"{taxonomy['kraken_classified']:,}"),
-            ("Classification rate", f"{taxonomy['classification_rate']:.2%}"),
-            (f"Species-assigned {unit}", f"{taxonomy['species_assigned']:,}"),
-            (f"Classified above species {unit}", f"{taxonomy['classified_above_species']:,}"),
+            ("Classification rate", f"{taxonomy['classified_fraction']:.2%}" if taxonomy["classified_fraction"] is not None else "not available"),
+            (f"Bracken-assigned {RANK_NAMES.get(taxonomy['taxonomic_level'], taxonomy['taxonomic_level'])} {unit}", f"{taxonomy['rank_assigned']:,}"),
+            (f"Classified outside Bracken profile {unit}", f"{taxonomy['classified_not_in_bracken']:,}"),
             (f"Unclassified {unit}", f"{taxonomy['unclassified_reads']:,}"),
         ]
-        sections.append(f"<section><h2>Taxonomy</h2>{metric_table(rows)}</section>")
+        sections.append(f"<section><h2>Taxonomy</h2>{metric_table(rows)}{evidence_html(output_dir, taxonomy)}</section>")
 
     assembly = summary.get("assembly")
     if assembly:
