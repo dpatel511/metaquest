@@ -145,13 +145,21 @@ def _canonical_fasta_sha256(path: Path) -> str:
 
 
 def _emapper_version(database_dir: Path) -> str:
+    environment = os.environ.copy()
+    for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"):
+        environment.pop(key, None)
     try:
-        result = subprocess.run(
-            ["emapper.py", "--data_dir", str(database_dir), "--version"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        with tempfile.TemporaryDirectory(prefix="metaquest-emapper-version-") as directory:
+            # eggNOG 2.x's fallback Git probe otherwise inherits the caller's repository.
+            environment["GIT_CEILING_DIRECTORIES"] = str(Path(directory).parent.resolve())
+            result = subprocess.run(
+                ["emapper.py", "--data_dir", str(database_dir), "--version"],
+                capture_output=True,
+                text=True,
+                check=False,
+                cwd=directory,
+                env=environment,
+            )
     except FileNotFoundError as exc:
         raise AnnotationError(
             "eggNOG-mapper is required for functional annotation; "

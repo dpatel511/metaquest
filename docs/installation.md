@@ -36,12 +36,22 @@ git clone --branch v2.0.0b3 https://github.com/dpatel511/metaquest.git
 cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
+conda install --strict-channel-priority -c conda-forge -c bioconda 'eggnog-mapper=2.1.15=pyhdfd78af_1'
 python -m pip install --no-deps 'metaquest-bio==2.0.0b3'
+python -m pip check
 ~~~
 
 `--no-deps` preserves the Python packages selected by Conda. For source development,
 use `python -m pip install --no-deps -e .` from the intended checkout; use
 `python -m pip install --no-deps .` for a non-editable source installation.
+
+The maintained environment pins eggNOG-mapper's corrected public build
+`2.1.15=pyhdfd78af_1`. The explicit installation above also selects that build when
+using an older release's environment file. Build 0 has conflicting Python
+dependency metadata; upgrade the package rather than editing installed metadata.
+The [environment audit](environment-validation.md) records the original failure,
+upstream correction and fresh public-build verification. `pip check` must pass
+after installing MetaQuest; Conda resolving alone does not establish consistency.
 
 Optional screening uses a separate native-tool environment. eggNOG-mapper's
 DIAMOND `<2.1` requires zlib `<1.3`, while current AMRFinderPlus requires a newer

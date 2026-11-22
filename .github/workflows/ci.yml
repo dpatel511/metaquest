@@ -91,6 +91,9 @@ jobs:
       - name: Install MetaQuest
         shell: bash -el {0}
         run: python -m pip install --no-deps -e .
+      - name: Verify Python dependency consistency
+        shell: bash -el {0}
+        run: python -m pip check
       - name: Install the isolated screening tool environment
         shell: bash -el {0}
         run: |
