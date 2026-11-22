@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0b4] — 2026-11-22 (unreleased)
+## [2.0.0b4] — 2026-11-22
 
 - Isolate the eggNOG annotation process from the output repository's Git identity,
   including inherited Git paths, so native logs and annotation headers agree
