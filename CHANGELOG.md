@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Pin the corrected public eggNOG-mapper 2.1.15 Conda build and require Python
+  dependency consistency in Conda CI. Document the reproduced metadata conflict,
+  upstream correction and fresh installation verification.
+- Isolate eggNOG version probing from the caller's Git repository so MetaQuest's
+  commit is not recorded as an eggNOG build.
+
 - Reject unknown YAML sections/settings and malformed configuration structures
   before dependency checks or analysis, with actionable configuration errors.
   Valid partial overrides retain the bundled defaults; older files containing
