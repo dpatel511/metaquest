@@ -99,8 +99,9 @@ produced 100 contigs and 106 predicted genes and passed the output/ID/accounting
 checker. Only 3.53% of fragments mapped to the shallow assembly, so abundance
 describes that assembled fraction; these results do not validate abundance
 accuracy. Functional annotation and research screening were skipped in this
-additional pipeline smoke; their existing native regression controls ran in
-the full software suite.
+additional pipeline smoke. The full software suite separately exercised
+controlled eggNOG subprocess fixtures and real AMRFinderPlus positive/negative
+and zero-hit controls; it did not run a new native eggNOG database search.
 
 ## Software checks
 
