@@ -1,11 +1,12 @@
 # Installation
 
-This guide covers the MetaQuest `2.0.0b3` research beta.
+This guide covers the MetaQuest `2.0.0b4` research beta.
 
-The current source checkout prepares `2.0.0b4`; that version has not been published.
-The index/tag commands below install the published beta 3. To test the prepared
-version, build a wheel with `python -m build`, install that wheel with `--no-deps`
-inside the complete environment, and verify `metaquest --version` and `pip check`.
+Check the [release page](https://github.com/dpatel511/metaquest/releases) for
+publication status before using the version-pinned index/tag commands below.
+For an unpublished checkout, build a wheel with `python -m build`, install that
+wheel with `--no-deps` inside the complete environment, and verify
+`metaquest --version` and `pip check`.
 
 ## Supported environment
 
@@ -24,7 +25,7 @@ The distribution is named `metaquest-bio`; it installs the `metaquest` Python
 package and CLI command:
 
 ~~~bash
-python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b3'
+python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b4'
 metaquest --version
 ~~~
 
@@ -37,12 +38,12 @@ repository's Conda environment.
 Use the environment files matching the package release:
 
 ~~~bash
-git clone --branch v2.0.0b3 https://github.com/dpatel511/metaquest.git
+git clone --branch v2.0.0b4 https://github.com/dpatel511/metaquest.git
 cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
 conda install --strict-channel-priority -c conda-forge -c bioconda 'eggnog-mapper=2.1.15=pyhdfd78af_1'
-python -m pip install --no-deps 'metaquest-bio==2.0.0b3'
+python -m pip install --no-deps 'metaquest-bio==2.0.0b4'
 python -m pip check
 ~~~
 

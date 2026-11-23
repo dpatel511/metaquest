@@ -50,7 +50,7 @@ In a fresh complete Conda environment, repeat the documented small pipeline run
 using that uploaded package instead of `pip install -e .`:
 
 ```bash
-python -m pip install --no-deps --index-url https://test.pypi.org/simple/ 'metaquest-bio==2.0.0b3'
+python -m pip install --no-deps --index-url https://test.pypi.org/simple/ 'metaquest-bio==2.0.0b4'
 metaquest --version
 ```
 
@@ -93,11 +93,11 @@ Older outputs lacking complete provenance may be unsuitable for `compare` or
 strict `--resume`. Reprocess into a new directory rather than editing provenance
 to force compatibility. Keep original output directories intact.
 
-## Beta 3 scope and residual limits
+## Beta 4 scope and residual limits
 
-The source tree now prepares beta 4 (`2.0.0b4`), adding taxonomy evidence schema 1
-and retaining the reliability fixes recorded in the changelog. This is not a
-publication notice. Require the existing release gates and review the
+Beta 4 (`2.0.0b4`) adds taxonomy evidence schema 1, strict configuration handling
+and the corrected eggNOG Conda build/provenance checks. Require the existing
+release gates and review the [beta-4 acceptance record](release-beta4.md) and
 [taxonomy evidence validation](taxonomy-evidence.md) before tagging/publishing.
 The beta-3 benchmark and statistical evidence below remain historical results;
 the reporting changes do not close their biological validation limits.
@@ -125,7 +125,7 @@ are complete.
    corresponding changelog entry.
 2. Merge the release preparation PR after all required checks pass.
 3. Create a signed or annotated tag with the same canonical version prefixed by
-   `v`, for example `v2.0.0b3`.
+   `v`, for example `v2.0.0b4`.
 4. Create and publish a GitHub Release from that tag. Mark beta releases as
    prereleases; the upload workflow checks that this flag matches the package version.
 5. Complete any configured `pypi` environment approval. The current production
