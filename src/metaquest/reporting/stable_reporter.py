@@ -367,7 +367,14 @@ def _write_html_report(output_dir: Path, summary: dict[str, Any]) -> None:
             ("Mean read length", f"{after.get('mean_length', 0):.1f} bp"),
             ("Q30 bases after filtering", f"{after.get('q30_rate', 0):.2%}"),
         ]
-        sections.append(f"<section><h2>Preprocessing</h2>{metric_table(rows)}</section>")
+        host = preprocessing.get("host_removal")
+        if host and preprocessing.get("fastp_status") == "disabled":
+            sections.append("<section><h2>Preprocessing</h2><p>fastp disabled.</p></section>")
+        else:
+            sections.append(f"<section><h2>Preprocessing</h2>{metric_table(rows)}</section>")
+        if host:
+            from metaquest.reporting.host_removal import host_html
+            sections.append(f"<section><h2>Host removal</h2>{host_html(host)}</section>")
 
     taxonomy = summary.get("taxonomy")
     if taxonomy:

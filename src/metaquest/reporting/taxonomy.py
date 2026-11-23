@@ -129,6 +129,11 @@ def write_methods(ctx, evidence, unit, level):
             "Database scope, related references and settings affect calls; no call does not establish absence.",
         ],
     }
+    host = (getattr(ctx, "preprocessing", None) or {}).get("host_removal")
+    if host:
+        methods["host_removal"] = {key: host[key] for key in
+                                  ("methods_file", "input", "retained", "removed", "count_unit")}
+        methods["interpretation"].append("All-input fractions use reads/fragments retained after host filtering, not the original library.")
     (Path(ctx.output_dir) / "taxonomy_methods.json").write_text(json.dumps(methods, indent=2) + "\n")
     return methods
 

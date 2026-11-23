@@ -92,6 +92,14 @@ metaquest run \
 
 This runs validation, fastp preprocessing, Kraken2, Bracken, and reporting.
 
+### Optional host removal (unreleased beta 5)
+
+Supply a local Bowtie2 index prefix with `--host-index PREFIX`, or set
+`preprocessing.host_index` in YAML. This is disabled by default and runs after
+fastp, before taxonomy, assembly and abundance. A whole pair is removed when
+either mate aligns. No host reference is downloaded automatically.
+See [setup, count units, provenance and limits](host-removal.md).
+
 ### Assembly, gene prediction, and functional annotation
 
 ~~~bash
@@ -111,6 +119,7 @@ Useful options:
 |---|---|
 | `--output DIR` | result directory |
 | `--db-dir DIR` | database root override |
+| `--host-index PREFIX` | optional local Bowtie2 host index prefix (beta 5) |
 | `--skip-validation` | bypass input validation |
 | `--taxonomy-only` | taxonomy-only execution |
 | `--skip-annotation` | deprecated alias for `--taxonomy-only` |

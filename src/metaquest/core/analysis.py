@@ -55,7 +55,14 @@ def _validate_resume(output_dir, input_files, config, workflow):
     ]
     if recorded_inputs != current_inputs:
         raise ConfigError("--resume input files do not match the recorded run")
-    if metadata.get("effective_config") != _jsonable(asdict(config)):
+    current_config = _jsonable(asdict(config))
+    recorded_config = metadata.get("effective_config")
+    if (isinstance(recorded_config, dict)
+            and "host_index" not in recorded_config.get("preprocessing", {})
+            and config.preprocessing.host_index is None):
+        # A missing optional index in older runs means filtering was disabled.
+        current_config["preprocessing"].pop("host_index")
+    if recorded_config != current_config:
         raise ConfigError("--resume configuration does not match the recorded run")
     recorded_workflow = metadata.get("workflow", {})
     for key, value in workflow.items():
@@ -74,6 +81,13 @@ def _validate_resume(output_dir, input_files, config, workflow):
         if recorded not in (None, "not_run", "unknown", "unavailable"):
             if runner._tool_version(command) != recorded:
                 raise ConfigError(f"--resume tool version changed: {tool}; use a new output directory")
+    host = metadata.get("tool_provenance", {}).get("host_removal")
+    if config.preprocessing.host_index is not None:
+        from .host_removal import tool_versions
+        if not host or host.get("state", {}).get("tool_versions") != tool_versions():
+            raise ConfigError("--resume host-filter tool versions changed or are missing; use a new output directory")
+    elif host:
+        raise ConfigError("--resume host-filter provenance differs from disabled filtering")
 
 
 def run_analysis(input_file, output_dir, cli_args=None):
@@ -91,10 +105,12 @@ def run_analysis(input_file, output_dir, cli_args=None):
     # Load config (from cli_args.config if available, else defaults)
     config_path = getattr(cli_args, "config", None)
     db_dir = getattr(cli_args, "db_dir", None)
-    if config_path or db_dir:
+    host_index = getattr(cli_args, "host_index", None)
+    if config_path or db_dir or host_index:
         config = load_config(
             Path(config_path) if config_path else None,
             db_dir=Path(db_dir) if db_dir else None,
+            host_index=host_index,
         )
     else:
         config = get_config()

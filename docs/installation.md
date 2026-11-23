@@ -2,6 +2,15 @@
 
 This guide covers the MetaQuest `2.0.0b4` research beta.
 
+The source checkout also contains unreleased beta-5 host filtering. To test that
+feature, use the checkout's `environment/environment.yml` and install the
+checkout with `python -m pip install --no-deps .`; the published beta-4 wheel
+does not contain it. Bowtie2 `>=2.5,<3` and Samtools `>=1.18,<2` are added to the
+core Conda environment. They are required at runtime only when a host index is
+configured. See [host reference setup](host-removal.md). Existing beta-4
+environments need those tools installed before testing the new wheel; selecting
+a different Python executable alone does not change which native tools PATH uses.
+
 Check the [release page](https://github.com/dpatel511/metaquest/releases) for
 publication status before using the version-pinned index/tag commands below.
 For an unpublished checkout, build a wheel with `python -m build`, install that

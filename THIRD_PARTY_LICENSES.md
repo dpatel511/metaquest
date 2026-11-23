@@ -33,6 +33,8 @@ They are not copied into MetaQuest wheels or source distributions.
 | Bracken | `>=3.1` | GPL-3.0-or-later | <https://github.com/jenniferlu717/Bracken> |
 | MEGAHIT | `>=1.2.9` | GPL-3.0 | <https://github.com/voutcn/megahit> |
 | fastp | `>=0.23.4` | MIT | <https://github.com/OpenGene/fastp> |
+| Bowtie 2 | `>=2.5,<3` | GPL-3.0-only | <https://github.com/BenLangmead/bowtie2> |
+| Samtools | `>=1.18,<2` | MIT/Expat | <https://github.com/samtools/samtools> |
 | DIAMOND | `>=2.0.11,<2.1` | GPL-3.0 | <https://github.com/bbuchfink/diamond> |
 | eggNOG-mapper | `2.1.15` | AGPL-3.0-only | <https://github.com/eggnogdb/eggnog-mapper> |
 | BBTools/BBMap | `>=39` | BSD-3-Clause-LBNL | <https://sourceforge.net/projects/bbmap/> |

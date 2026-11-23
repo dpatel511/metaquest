@@ -52,6 +52,12 @@ def write_step_reports(output: Path, summary: dict) -> list[dict]:
         sections = [("Stage status", f"<p>{html.escape(status)}</p><p><a href='../analysis_metadata.json'>Run provenance and settings</a> · <a href='../report.html'>Consolidated report</a></p>"),
                     ("Recorded evidence", '<div class="scroll">' + frame.head(150).to_html(index=False, escape=True) + '</div>'
                      + '<p>Showing up to 150 metrics; the companion TSV and JSON contain the full record.</p>')]
+        if key == "preprocessing" and data and data.get("host_removal"):
+            from metaquest.reporting.host_removal import host_html
+            fastp = {name: value for name, value in data.items() if name != "host_removal"}
+            sections[1] = ("Recorded evidence", pd.DataFrame(_metric_rows(fastp)).head(150).to_html(index=False, escape=True)
+                           + '<p>Full fastp and host-filter provenance is retained in the companion TSV and JSON.</p>')
+            sections.insert(1, ("Host removal", host_html(data["host_removal"], prefix="../")))
         if key == "taxonomy" and data and data.get("evidence_table"):
             from metaquest.reporting.taxonomy import evidence_html
             # Legacy aliases remain in JSON/TSV; show canonical rank-neutral counts in HTML.

@@ -75,6 +75,7 @@ class PreprocessingConfig:
     threads: int = 4
     qualified_quality_phred: int = 20
     length_required: int = 50
+    host_index: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -151,6 +152,9 @@ def _build_section(cls, raw: dict, key: str):
     """Build a frozen dataclass from a validated YAML section."""
     section = raw.get(key, {}) or {}
     filtered = dict(section)
+    if cls is PreprocessingConfig and filtered.get("host_index") is not None:
+        if not isinstance(filtered["host_index"], (str, Path)):
+            raise ConfigError("preprocessing.host_index must be a local index prefix or null")
     if cls is ReportingConfig and "plot_formats" in filtered:
         filtered["plot_formats"] = tuple(filtered["plot_formats"])
     # Convert Path fields
@@ -191,6 +195,7 @@ def load_config(
     config_path: Path | None = None,
     *,
     db_dir: Path | None = None,
+    host_index: Path | None = None,
 ) -> MetaQuestConfig:
     """
     Load configuration from YAML file.
@@ -221,6 +226,8 @@ def load_config(
             else:
                 raw[key] = val
 
+    if host_index is not None:
+        raw["preprocessing"] = {**raw.get("preprocessing", {}), "host_index": host_index}
     resolved_db_dir = _resolve_db_dir(raw, db_dir)
     databases = _build_databases_config(raw, resolved_db_dir)
 
