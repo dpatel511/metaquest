@@ -44,7 +44,7 @@ effective settings, input hashes, tool/database identity and run status.
 - fastp totals and retention refer to individual reads, including in paired
   mode. Q20/Q30 are fractions of bases in JSON; plot TSVs use percentages.
   Validation sampling indicators and analyzed counts accompany sample estimates.
-- Unreleased beta 5 adds optional `preprocessing.host_removal` evidence and
+- Beta 5 adds optional `preprocessing.host_removal` evidence and
   `preprocessing/host_removal/summary.json` schema 1. Counts are fragments for
   paired/interleaved inputs and reads for single-end inputs; `input = retained +
   removed`. Host `input` is after fastp (or original input when fastp is disabled),

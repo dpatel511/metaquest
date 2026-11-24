@@ -1,15 +1,11 @@
 # Installation
 
-This guide covers the MetaQuest `2.0.0b4` research beta.
+This guide covers the MetaQuest `2.0.0b5` research beta.
 
-The source checkout also contains unreleased beta-5 host filtering. To test that
-feature, use the checkout's `environment/environment.yml` and install the
-checkout with `python -m pip install --no-deps .`; the published beta-4 wheel
-does not contain it. Bowtie2 `>=2.5,<3` and Samtools `>=1.18,<2` are added to the
-core Conda environment. They are required at runtime only when a host index is
-configured. See [host reference setup](host-removal.md). Existing beta-4
-environments need those tools installed before testing the new wheel; selecting
-a different Python executable alone does not change which native tools PATH uses.
+The beta-5 core Conda environment includes Bowtie2 `>=2.5,<3` and Samtools
+`>=1.18,<2`. These tools are required at runtime when a host index is configured.
+When upgrading a beta-4 environment, install both tools and verify that they are
+on PATH before enabling filtering. See [host reference setup](host-removal.md).
 
 Check the [release page](https://github.com/dpatel511/metaquest/releases) for
 publication status before using the version-pinned index/tag commands below.
@@ -34,7 +30,7 @@ The distribution is named `metaquest-bio`; it installs the `metaquest` Python
 package and CLI command:
 
 ~~~bash
-python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b4'
+python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b5'
 metaquest --version
 ~~~
 
@@ -47,12 +43,12 @@ repository's Conda environment.
 Use the environment files matching the package release:
 
 ~~~bash
-git clone --branch v2.0.0b4 https://github.com/dpatel511/metaquest.git
+git clone --branch v2.0.0b5 https://github.com/dpatel511/metaquest.git
 cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
 conda install --strict-channel-priority -c conda-forge -c bioconda 'eggnog-mapper=2.1.15=pyhdfd78af_1'
-python -m pip install --no-deps 'metaquest-bio==2.0.0b4'
+python -m pip install --no-deps 'metaquest-bio==2.0.0b5'
 python -m pip check
 ~~~
 

@@ -1,14 +1,14 @@
 # Optional host-reference filtering
 
-This feature belongs to **2.0.0b5 (unreleased)**. It is disabled by default.
+This feature belongs to **2.0.0b5**. It is disabled by default.
 MetaQuest uses Bowtie2 to align reads against a supplied local reference index
 and Samtools to retain unmapped reads. It does not download a host genome or
 infer a reference from taxonomic results.
 
 ## Setup and execution
 
-Install the checkout's core Conda environment, including Bowtie2 `>=2.5,<3` and
-Samtools `>=1.18,<2`, then install the beta-5 checkout/wheel. Keep screening in
+Install the beta-5 core Conda environment, including Bowtie2 `>=2.5,<3` and
+Samtools `>=1.18,<2`, then install `metaquest-bio==2.0.0b5`. Keep screening in
 its separate environment. Build an index from a reference you have selected
 and reviewed; record its source, assembly and any masking separately:
 
