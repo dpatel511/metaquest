@@ -92,7 +92,7 @@ metaquest run \
 
 This runs validation, fastp preprocessing, Kraken2, Bracken, and reporting.
 
-### Optional host removal (unreleased beta 5)
+### Optional host removal
 
 Supply a local Bowtie2 index prefix with `--host-index PREFIX`, or set
 `preprocessing.host_index` in YAML. This is disabled by default and runs after

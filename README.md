@@ -1,13 +1,11 @@
 # MetaQuest
 
-This checkout targets **2.0.0b5 (unreleased)**, adding optional
-[host-reference filtering](docs/host-removal.md). The published research beta is
-**2.0.0b4**, with [auditable taxonomy evidence](docs/taxonomy-evidence.md);
-installation commands below remain pinned to that release. Tests and scoped
-benchmarks do not establish improved biological accuracy.
+**2.0.0b5** adds optional [host-reference filtering](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/host-removal.md)
+with whole-pair removal and reference provenance. It retains the
+[auditable taxonomy evidence](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/taxonomy-evidence.md) from beta 4.
 
 MetaQuest is a research-use command-line pipeline for short-read metagenomic
-FASTQ analysis. The `2.0.0b4` research beta provides a
+FASTQ analysis. The `2.0.0b5` research beta provides a
 maintained workflow for profiling, assembly, annotation, abundance and reporting.
 It does not make clinical or pathogen-risk claims.
 
@@ -23,7 +21,7 @@ studies require at least three. Paired and batch-adjusted tests are unsupported.
 
 - full FASTQ structural validation and sampled quality warnings
 - fastp adapter and quality preprocessing with retained-read QC
-- optional Bowtie2/Samtools host-reference filtering (unreleased beta 5), with
+- optional Bowtie2/Samtools host-reference filtering, with
   synchronized whole-pair removal and index/count provenance
 - synchronized paired-read identifier and count validation
 - Kraken2 taxonomic classification
@@ -73,7 +71,7 @@ Snakemake remains planned.
 Install the exact Python distribution from PyPI:
 
 ~~~bash
-python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b4'
+python -m pip install --upgrade --pre 'metaquest-bio==2.0.0b5'
 metaquest --version
 ~~~
 
@@ -83,15 +81,15 @@ Bracken, MEGAHIT, DIAMOND, or eggNOG-mapper. For the complete runtime, clone
 the repository and create its Conda environment before installing the package:
 
 ~~~bash
-git clone --branch v2.0.0b4 https://github.com/dpatel511/metaquest.git
+git clone --branch v2.0.0b5 https://github.com/dpatel511/metaquest.git
 cd metaquest
 conda env create -f environment/environment.yml
 conda activate metaquest
-python -m pip install --no-deps 'metaquest-bio==2.0.0b4'
+python -m pip install --no-deps 'metaquest-bio==2.0.0b5'
 ~~~
 
 For optional screening, also install `environment/screening.yml` separately and
-append its executables to PATH using the [installation guide](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/installation.md).
+append its executables to PATH using the [installation guide](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/installation.md).
 It isolates AMRFinderPlus's native libraries from eggNOG's older DIAMOND stack.
 
 Inspect and install the taxonomy database:
@@ -178,17 +176,17 @@ The database path resolution order is:
 
 ## Documentation
 
-- [Installation](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/installation.md)
-- [Database management](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/databases.md)
-- [Usage](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/usage.md)
-- [Gene prediction and functional annotation](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/annotation.md)
-- [Research screening and comparative analysis](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/screening-comparison.md)
-- [Release process](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/releasing.md)
-- [Reproducible acceptance checks](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/acceptance.md)
-- [Biological benchmark protocol](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/benchmarking.md)
-- [Development checkpoints](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/development-checkpoints.md)
-- [Comparative-analysis validation](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/comparison-validation.md)
-- [Changelog](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/CHANGELOG.md)
+- [Installation](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/installation.md)
+- [Database management](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/databases.md)
+- [Usage](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/usage.md)
+- [Gene prediction and functional annotation](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/annotation.md)
+- [Research screening and comparative analysis](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/screening-comparison.md)
+- [Release process](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/releasing.md)
+- [Reproducible acceptance checks](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/acceptance.md)
+- [Biological benchmark protocol](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/benchmarking.md)
+- [Development checkpoints](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/development-checkpoints.md)
+- [Comparative-analysis validation](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/comparison-validation.md)
+- [Changelog](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/CHANGELOG.md)
 
 ## Validation status
 
@@ -200,24 +198,24 @@ not per-read classification accuracy. The Standard-8 database excludes fungi.
 
 The benchmark also retains unresolved assembly/reference disagreements and
 conflicting elapsed times. It skipped functional annotation and screening.
-See the [full benchmark results](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/benchmarks/zymo-even/RESULTS.md) and
-[protocol](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/benchmarking.md) before interpreting these results.
+See the [full benchmark results](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/benchmarks/zymo-even/RESULTS.md) and
+[protocol](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/benchmarking.md) before interpreting these results.
 
 The comparison audit adds frozen synthetic and exact-null checks, independent
 calculation regressions and the small/tied-sample guard. These checks do not
 establish biological differential-abundance accuracy; see the
-[comparison results](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/benchmarks/comparison/RESULTS.md).
+[comparison results](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/benchmarks/comparison/RESULTS.md).
 
 MetaQuest remains beta software. Biological benchmarking, browser/data-contract
-review and independent user acceptance remain open in the [development checkpoints](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/development-checkpoints.md). Larger
+review and independent user acceptance remain open in the [development checkpoints](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/development-checkpoints.md). Larger
 database comparisons are deferred; passing software tests does not close these
 gates. Older outputs lacking current database identities require a new run
-instead of strict `--resume`; see [recovery](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/docs/recovery.md).
+instead of strict `--resume`; see [recovery](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/docs/recovery.md).
 
 ## License
 
 MetaQuest is distributed under the GNU General Public License v3.0 or later.
 Copyright (c) 2026 Dev Patel. External programs and reference databases are not
 included in the Python distribution and remain subject to their own terms. See
-[Third-party licenses](https://github.com/dpatel511/metaquest/blob/v2.0.0b4/THIRD_PARTY_LICENSES.md) for the maintained dependency
+[Third-party licenses](https://github.com/dpatel511/metaquest/blob/v2.0.0b5/THIRD_PARTY_LICENSES.md) for the maintained dependency
 and provenance inventory.

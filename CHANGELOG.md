@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0b5] — unreleased
+## [2.0.0b5] — 2026-11-24
 
 - Add optional Bowtie2 host-reference filtering after fastp, disabled by default.
   A local index prefix is required; no reference is downloaded automatically.

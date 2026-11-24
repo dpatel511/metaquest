@@ -77,7 +77,7 @@ Older outputs without the new database identities are rejected for strict resume
 Retain those outputs and reprocess in a new directory. Never insert missing
 fingerprints or edit configuration/provenance to bypass the check.
 
-Unreleased beta-5 host filtering adds full hashes of all six Bowtie2 index
+Beta-5 host filtering adds full hashes of all six Bowtie2 index
 shards, native versions, effective settings and input/output hashes. A changed
 host reference or native version requires a new output directory. Changed
 retained reads or native logs invalidate filtering reuse; failed attempts remain
