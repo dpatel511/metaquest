@@ -7,6 +7,7 @@ Run this with the installed MetaQuest environment, including Biopython.
 
 import argparse
 import csv
+import gzip
 import hashlib
 import json
 import math
@@ -15,7 +16,7 @@ from pathlib import Path
 
 from Bio import SeqIO
 
-from metaquest.core.abundance import read_gene_gff
+from metaquest.core.abundance import read_gene_gff, _sha256
 
 
 def require(condition, message):
@@ -84,11 +85,47 @@ def verify_taxonomy_evidence(root, taxonomy):
     return len(evidence)
 
 
+def verify_host_removal(root, metadata, summary):
+    evidence = summary.get("preprocessing", {}).get("host_removal")
+    configured = metadata["effective_config"]["preprocessing"].get("host_index") is not None
+    require(bool(evidence) == configured, "Host-filter configuration and report evidence differ")
+    if not evidence:
+        return
+    methods = json.loads((root / "preprocessing/host_removal/summary.json").read_text())
+    require(methods["schema_version"] == evidence["schema_version"] == 1, "Unsupported host-filter schema")
+    for key in ("state", "input", "retained", "removed", "count_unit", "output_files", "output_sha256", "evidence_sha256"):
+        require(methods[key] == evidence[key], f"Host-filter methods/report differ: {key}")
+    recorded = metadata["tool_provenance"].get("host_removal", {})
+    require(recorded.get("state") == evidence["state"], "Host-filter run provenance differs")
+    require(evidence["retained"] + evidence["removed"] == evidence["input"], "Host-filter counts do not reconcile")
+    require(evidence["retained"] == summary["taxonomy"]["total_input"]
+            and evidence["count_unit"] == summary["taxonomy"]["count_unit"], "Host-filter downstream denominator differs")
+    units = 2 if evidence["state"]["paired"] else 1
+    for relative in evidence["output_files"]:
+        path = (root / relative).resolve()
+        require(path.is_relative_to(root), "Host-filter output leaves result directory")
+        require(_sha256(path) == evidence["output_sha256"][path.name], "Host-filter output hash differs")
+        with gzip.open(path, "rt") as handle:
+            require(sum(1 for _ in SeqIO.parse(handle, "fastq")) == evidence["retained"], "Host-filter FASTQ count differs")
+    for relative, digest in evidence["evidence_sha256"].items():
+        path = (root / "preprocessing/host_removal" / relative).resolve()
+        require(path.is_relative_to(root) and _sha256(path) == digest, "Host-filter native evidence hash differs")
+    for source in evidence["state"]["inputs"]:
+        require(_sha256(Path(source["path"])) == source["sha256"], "Host-filter input hash differs")
+    index = evidence["state"]["index"]
+    for suffix, digest in index["sha256"].items():
+        require(_sha256(Path(f"{index['prefix']}.{suffix}")) == digest, "Host-filter index hash differs")
+    if metadata["effective_config"]["preprocessing"]["enabled"]:
+        require(summary["preprocessing"]["after"]["reads"] == evidence["input"] * units, "Host-filter input disagrees with fastp retained reads")
+
+
 def verify(root):
     root = root.resolve()
     metadata = json.loads((root / "analysis_metadata.json").read_text())
     summary = json.loads((root / "analysis_summary.json").read_text())
     require(metadata.get("status") == "completed", "Run did not complete")
+    if summary.get("preprocessing", {}).get("host_removal") or metadata.get("effective_config", {}).get("preprocessing", {}).get("host_index"):
+        verify_host_removal(root, metadata, summary)
     taxonomy = summary["taxonomy"]
     total = taxonomy["total_input"]
     require(taxonomy["kraken_classified"] + taxonomy["unclassified_reads"] == total,

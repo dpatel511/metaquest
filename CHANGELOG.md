@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0b5] — unreleased
+
+- Add optional Bowtie2 host-reference filtering after fastp, disabled by default.
+  A local index prefix is required; no reference is downloaded automatically.
+  Remove a whole pair if either mate aligns. Record index/input/output hashes,
+  tool versions, count units and retained-input denominators in reports and methods.
+- Validate filtered FASTQ counts independently against primary mapping statistics;
+  fail on conversion loss, including duplicate-name collapse. Preserve failed
+  attempts, require matching reference/tool provenance for resume, and reject
+  incompatible filtered/unfiltered cohort profiles.
+
 ## [2.0.0b4] — 2026-11-23
 
 - Isolate the eggNOG annotation process from the output repository's Git identity,

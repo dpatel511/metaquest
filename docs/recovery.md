@@ -77,6 +77,17 @@ Older outputs without the new database identities are rejected for strict resume
 Retain those outputs and reprocess in a new directory. Never insert missing
 fingerprints or edit configuration/provenance to bypass the check.
 
+Unreleased beta-5 host filtering adds full hashes of all six Bowtie2 index
+shards, native versions, effective settings and input/output hashes. A changed
+host reference or native version requires a new output directory. Changed
+retained reads or native logs invalidate filtering reuse; failed attempts remain
+under `preprocessing/host_removal/attempt-*`. A completion JSON is promoted only
+after native commands and independent record counts agree. All-removed input
+retains that evidence and fails analysis before downstream processing.
+Legacy beta-4 provenance missing the new optional key remains compatible when
+host filtering is disabled; MetaQuest does not rewrite the old provenance to
+force a match. See [host removal](host-removal.md).
+
 Ctrl+C exits 130; SIGTERM exits 143. Both unwind native process groups and record
 an interrupted attempt. Native descendants are terminated, including fixtures
 that ignore SIGTERM. Metadata replacement uses a temporary file, preserving the

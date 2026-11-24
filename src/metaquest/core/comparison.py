@@ -167,7 +167,36 @@ def _profile(root: Path, feature: str) -> tuple[pd.Series, dict, dict, Path]:
     for section in ("classification", "annotation"):
         if isinstance(identity.get(section), dict):
             identity[section] = {key: value for key, value in identity[section].items() if key != "threads"}
-    identity["preprocessing"] = {key: value for key, value in preprocessing.items() if key != "threads"}
+    identity["preprocessing"] = {key: value for key, value in preprocessing.items() if key not in ("threads", "host_index")}
+    host = provenance.get("host_removal")
+    identity["host_removal"] = "not_run"
+    if preprocessing.get("host_index") is not None:
+        if not isinstance(host, dict) or host.get("status") != "completed" or host.get("schema_version") != 1:
+            raise ComparisonError(f"Host-filter provenance is incomplete: {root}")
+        state = host.get("state", {})
+        if not isinstance(state, dict) or not isinstance(state.get("index"), dict):
+            raise ComparisonError(f"Host-filter methods are incomplete: {root}")
+        reference = state.get("index", {}).get("sha256", {})
+        versions = state.get("tool_versions", {})
+        expected = [{f"{part}.{kind}" for part in ("1", "2", "3", "4", "rev.1", "rev.2")}
+                    for kind in ("bt2", "bt2l")]
+        if (not isinstance(reference, dict) or set(reference) not in expected
+                or any(not re.fullmatch(r"[a-f0-9]{64}", str(value)) for value in reference.values())
+                or not isinstance(versions, dict)
+                or not all(versions.get(name) for name in ("bowtie2", "samtools"))
+                or state.get("pair_policy") != "remove_pair_if_either_maps"
+                or state.get("preset") != "sensitive" or state.get("seed") != 0):
+            raise ComparisonError(f"Host-filter methods or index hashes are incomplete: {root}")
+        counts = [host.get(key) for key in ("input", "retained", "removed")]
+        if (any(type(value) is not int or value < 0 for value in counts)
+                or counts[1] + counts[2] != counts[0]
+                or host.get("count_unit") != identity["count_unit"]
+                or host["retained"] != summary.get("taxonomy", {}).get("total_input")):
+            raise ComparisonError(f"Host-filter counts disagree with downstream input: {root}")
+        identity["host_removal"] = {"reference": reference, "tools": versions,
+                                    "preset": state["preset"], "seed": state["seed"], "policy": state["pair_policy"]}
+    elif host:
+        raise ComparisonError(f"Host-filter provenance conflicts with disabled filtering: {root}")
     series = pd.Series(numeric, index=identifiers.astype(str).to_numpy())
     return series, labels, {"identity": identity, "metadata": metadata, "summary": summary}, path
 

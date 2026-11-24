@@ -85,6 +85,9 @@ def _database_identity(config, *, taxonomy_only=False, skip_functional=False):
                              "mtime_ns": (directory / item).stat().st_mtime_ns}
                       if (directory / item).is_file() else None for item in names},
         }
+    if config.preprocessing.host_index is not None:
+        from metaquest.core.host_removal import index_identity
+        identities["host"] = index_identity(config.preprocessing.host_index)
     return identities
 
 
@@ -105,6 +108,13 @@ def _stage_output_hashes(ctx, name):
                                        "preprocessing/cleaned_R1.fastq.gz"]
         if ctx.read_mode != "single":
             files["Read Preprocessing"].append("preprocessing/cleaned_R2.fastq.gz")
+    if ctx.config.preprocessing.host_index is not None:
+        files.setdefault("Read Preprocessing", []).extend([
+            "preprocessing/host_removal/summary.json", "preprocessing/host_removal/retained_R1.fastq.gz"])
+        if ctx.read_mode != "single":
+            files["Read Preprocessing"].append("preprocessing/host_removal/retained_R2.fastq.gz")
+        if ctx.read_mode == "interleaved" and not ctx.config.preprocessing.enabled:
+            files["Read Preprocessing"].extend(["split_R1.fastq.gz", "split_R2.fastq.gz"])
     if not ctx.skip_functional:
         files["Gene Abundance"].append("gene_abundance/functional_abundance.tsv")
     if ctx.read_mode == "interleaved" and not ctx.config.preprocessing.enabled:
@@ -342,6 +352,9 @@ class PipelineRunner:
             metadata["tool_provenance"]["bracken_model_read_length"] = (
                 ctx.classification.bracken_read_length
             )
+        host = (getattr(ctx, "preprocessing", None) or {}).get("host_removal")
+        if host:
+            metadata["tool_provenance"]["host_removal"] = host
         metadata.update(_jsonable(ctx.metadata))
 
         metadata_file = ctx.output_dir / "analysis_metadata.json"

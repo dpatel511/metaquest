@@ -379,6 +379,7 @@ def create_parser():
     )
     parser_check.add_argument('--screen-pathogens', action='store_true',
                               help='Also verify AMRFinderPlus and its screening database')
+    parser_check.add_argument('--host-index', type=Path, help='Verify an optional local Bowtie2 host index prefix')
 
     # ========================================================================
     # VALIDATE COMMAND
@@ -505,6 +506,8 @@ def create_parser():
     )
     parser_analyze.add_argument('--screen-pathogens', action='store_true',
                                 help='Screen human-associated bacterial taxa and curated AMR/virulence protein evidence')
+    parser_analyze.add_argument('--host-index', type=Path,
+                                help='Remove reads matching this local Bowtie2 index; remove a pair if either mate aligns')
     
     # Add argument groups
     setup_annotation_args(parser_analyze)
@@ -717,7 +720,8 @@ def main():
             formatter.info("Verifying installation of required tools and databases...")
             
             from .settings import load_config
-            check_config = load_config(Path(args.config) if args.config else None, db_dir=args.db_dir)
+            check_config = load_config(Path(args.config) if args.config else None, db_dir=args.db_dir,
+                                       host_index=args.host_index)
             run_system_check(
                 formatter,
                 config=check_config,
@@ -784,6 +788,7 @@ def main():
                 check_config = load_config(
                     Path(args.config) if args.config else None,
                     db_dir=args.db_dir,
+                    host_index=args.host_index,
                 )
                 screening_requested = args.screen_pathogens or check_config.screening.enabled
                 if taxonomy_only and screening_requested:
@@ -837,6 +842,7 @@ def main():
                     'Skipped' if taxonomy_only or args.skip_abundance else 'BBMap + TPM'
                 ),
                 'Research screening': 'AMRFinderPlus + species targets' if screening_requested else 'Not requested',
+                'Host removal': str(check_config.preprocessing.host_index) if check_config.preprocessing.host_index else 'Not requested',
                 'Memory mode': 'Low memory' if args.low_memory else 'Default',
                 'Annotation threads': str(args.annotation_threads if args.annotation_threads is not None else check_config.annotation.threads),
                 'Output': args.output,
@@ -867,6 +873,11 @@ def main():
                 metrics['Reads retained after fastp'] = (
                     f"{preprocessing.get('retained_fraction', 0):.2%}"
                 )
+            if preprocessing.get('host_removal'):
+                host = preprocessing['host_removal']
+                unit = host['count_unit']
+                metrics[f'Host-reference removed {unit}'] = host['removed']
+                metrics[f'Retained for analysis {unit}'] = host['retained']
             if assembly:
                 metrics['Assembly contigs'] = f"{assembly.get('total_contigs', 0):,}"
                 metrics['Assembly N50'] = f"{assembly.get('n50', 0):,} bp"

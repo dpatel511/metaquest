@@ -40,10 +40,15 @@ def run_system_check(
     warnings = []
     
     formatter.info("Performing system-wide checks...")
+    if config is None:
+        from metaquest.settings import get_config
+        config = get_config()
 
     # Command-Line Tools
     formatter.substep("Checking command-line tools...")
     tools = {'fastp': '--version', 'kraken2': '--version', 'bracken': '--version'}
+    if config.preprocessing.host_index is not None:
+        tools.update({'bowtie2': '--version', 'samtools': '--version'})
     if not taxonomy_only:
         tools['megahit'] = '--version'
     if require_functional:
@@ -82,9 +87,14 @@ def run_system_check(
 
     # Databases
     formatter.substep("Checking database files...")
-    if config is None:
-        from metaquest.settings import get_config
-        config = get_config()
+    if config.preprocessing.host_index is not None:
+        from metaquest.core.host_removal import index_files, tool_versions
+        from metaquest.exceptions import ConfigError
+        try:
+            index_files(config.preprocessing.host_index)
+            tool_versions()
+        except ConfigError as exc:
+            errors.append(str(exc))
     required_dbs = {
         "taxonomy": (config.databases.kraken_db / "hash.k2d",),
     }

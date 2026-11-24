@@ -1,10 +1,10 @@
 # MetaQuest
 
-This documentation targets **2.0.0b4**, a research beta adding
-[auditable taxonomy evidence](docs/taxonomy-evidence.md). Check the
-[release page](https://github.com/dpatel511/metaquest/releases) for publication
-status before using the version-pinned installation commands below. Its tests
-and scoped benchmark do not establish improved biological accuracy.
+This checkout targets **2.0.0b5 (unreleased)**, adding optional
+[host-reference filtering](docs/host-removal.md). The published research beta is
+**2.0.0b4**, with [auditable taxonomy evidence](docs/taxonomy-evidence.md);
+installation commands below remain pinned to that release. Tests and scoped
+benchmarks do not establish improved biological accuracy.
 
 MetaQuest is a research-use command-line pipeline for short-read metagenomic
 FASTQ analysis. The `2.0.0b4` research beta provides a
@@ -23,6 +23,8 @@ studies require at least three. Paired and batch-adjusted tests are unsupported.
 
 - full FASTQ structural validation and sampled quality warnings
 - fastp adapter and quality preprocessing with retained-read QC
+- optional Bowtie2/Samtools host-reference filtering (unreleased beta 5), with
+  synchronized whole-pair removal and index/count provenance
 - synchronized paired-read identifier and count validation
 - Kraken2 taxonomic classification
 - Bracken abundance re-estimation
@@ -40,8 +42,10 @@ studies require at least three. Paired and batch-adjusted tests are unsupported.
 - per-stage HTML, JSON and TSV reports with explicit skipped/not-run states
 - aligned multi-sample profiles and exploratory comparisons of two independent groups
 
-MetaQuest uses fastp for read trimming. It does not currently remove host reads,
-diagnose infection, establish resistance phenotypes, or recommend treatment.
+MetaQuest uses fastp for read trimming. Optional host-reference filtering in
+beta 5 removes a whole pair when either mate aligns. It does not establish host
+absence or privacy protection. MetaQuest does not diagnose infection, establish
+resistance phenotypes, or recommend treatment.
 Screening reports curated sequence evidence with database provenance; its
 biological sensitivity and specificity require independent validation.
 
@@ -51,6 +55,7 @@ biological sensitivity and specificity require independent validation.
 FASTQ
   ├── validation
   ├── fastp preprocessing
+  ├── optional Bowtie2 → Samtools host-reference filtering (beta 5)
   ├── Kraken2 → Bracken
   ├── MEGAHIT
   ├── Pyrodigal
@@ -61,7 +66,7 @@ FASTQ
 ~~~
 
 The maintained pipeline currently runs directly in Python. Migration to
-Snakemake and optional Bowtie2 host filtering remain planned.
+Snakemake remains planned.
 
 ## Quick start
 

@@ -42,6 +42,7 @@ abundance:
 
 preprocessing:
   enabled: true
+  host_index: null         # optional local Bowtie2 prefix; independent of fastp enabled
   threads: 4
   qualified_quality_phred: 20
   length_required: 50
